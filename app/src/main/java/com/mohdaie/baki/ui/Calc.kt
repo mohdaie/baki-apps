@@ -8,6 +8,7 @@ import com.mohdaie.baki.data.PendingEntity
 import com.mohdaie.baki.data.TransactionEntity
 import com.mohdaie.baki.model.BudgetMode
 import com.mohdaie.baki.model.Category
+import com.mohdaie.baki.model.SALARY_TAG
 import com.mohdaie.baki.model.TxType
 import com.mohdaie.baki.ui.theme.*
 import java.time.LocalDate
@@ -62,7 +63,8 @@ fun summarize(
 
     val expenses = monthTx.filter { it.type == TxType.EXPENSE }
     val spent = expenses.sumOf { it.amount }
-    val income = monthTx.filter { it.type == TxType.INCOME }.sumOf { it.amount }
+    // Income ticked as "net salary" is already the salary figure, so it isn't added again.
+    val income = monthTx.filter { it.type == TxType.INCOME && it.category != SALARY_TAG }.sumOf { it.amount }
     val left = salary + income - paidTotal - spent
     val daysLeft = if (isCurrent) month.lengthOfMonth() - today.dayOfMonth + 1 else month.lengthOfMonth()
     val available = salary - commitTotal

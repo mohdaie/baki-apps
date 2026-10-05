@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mohdaie.baki.data.TransactionEntity
 import com.mohdaie.baki.model.Category
+import com.mohdaie.baki.model.SALARY_TAG
 import com.mohdaie.baki.model.TxType
 import com.mohdaie.baki.ui.color
 import com.mohdaie.baki.ui.icon
@@ -420,6 +421,7 @@ fun TxRow(tx: TransactionEntity, showDivider: Boolean, onClick: () -> Unit) {
     val time = tx.timestamp.toLocalDateTime().format(Fmt.time)
     val suffix = when {
         tx.type == TxType.TRANSFER -> " · Transfer"
+        tx.type == TxType.INCOME && tx.category == SALARY_TAG -> " · Net salary"
         tx.type == TxType.INCOME -> " · Income"
         tx.category == null -> " · Uncategorized"
         else -> ""

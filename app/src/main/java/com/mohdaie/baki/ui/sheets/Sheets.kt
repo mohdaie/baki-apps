@@ -7,6 +7,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -36,6 +39,7 @@ import com.mohdaie.baki.data.PendingEntity
 import com.mohdaie.baki.data.TxDraft
 import com.mohdaie.baki.model.COMMITMENT_KINDS
 import com.mohdaie.baki.model.Category
+import com.mohdaie.baki.model.SALARY_TAG
 import com.mohdaie.baki.model.TxType
 import com.mohdaie.baki.parser.NotificationParser
 import com.mohdaie.baki.ui.components.*
@@ -111,7 +115,8 @@ fun TransactionForm(
         mutableStateOf(if (init.merchant == NotificationParser.UNKNOWN_MERCHANT) "" else init.merchant)
     }
     var account by remember(init.key) { mutableStateOf(init.account) }
-    var category by remember(init.key) { mutableStateOf(init.category) }
+    var category by remember(init.key) { mutableStateOf(init.category?.takeIf { it != SALARY_TAG }) }
+    var isSalary by remember(init.key) { mutableStateOf(init.category == SALARY_TAG) }
     val accountOptions = remember(accounts, init.account) {
         (listOf(init.account) + accounts + "Cash").filter { it.isNotBlank() }.distinct()
     }
@@ -205,6 +210,10 @@ fun TransactionForm(
             }
         }
 
+        if (type == TxType.INCOME) {
+            SalaryOption(isSalary) { isSalary = !isSalary }
+        }
+
         // Merchant
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             CapsLabel("Merchant")
@@ -260,7 +269,11 @@ fun TransactionForm(
                         TxDraft(
                             amount = amountValue,
                             type = type,
-                            category = if (type == TxType.EXPENSE) category else null,
+                            category = when (type) {
+                                TxType.EXPENSE -> category
+                                TxType.INCOME -> if (isSalary) SALARY_TAG else null
+                                else -> null
+                            },
                             merchant = merchant.trim().ifBlank { NotificationParser.UNKNOWN_MERCHANT },
                             account = account,
                         ),
@@ -418,6 +431,42 @@ private fun LinkCommitment(
                 }
                 if (i < ordered.lastIndex) HairlineDivider()
             }
+        }
+    }
+}
+
+/** Round radio-style tick: "This is my net salary". */
+@Composable
+private fun SalaryOption(selected: Boolean, onToggle: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(if (selected) AccentSoft else Color.White)
+            .border(if (selected) 2.5.dp else 1.5.dp, if (selected) Ink else Color(0xFFCFCDC4), shape)
+            .toggleable(value = selected, role = Role.Checkbox, onValueChange = { onToggle() })
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(2.5.dp, Ink, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) Box(Modifier.size(12.dp).clip(CircleShape).background(Accent))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text("This is my net salary", color = Ink, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Sets this month's net salary to this amount instead of adding it as extra income.",
+                color = Muted,
+                fontSize = 12.5.sp,
+            )
         }
     }
 }

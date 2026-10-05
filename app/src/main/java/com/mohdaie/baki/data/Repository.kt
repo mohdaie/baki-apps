@@ -2,6 +2,7 @@ package com.mohdaie.baki.data
 
 import android.content.Context
 import com.mohdaie.baki.BakiApp
+import com.mohdaie.baki.model.SALARY_TAG
 import com.mohdaie.baki.model.TxType
 import com.mohdaie.baki.parser.NotificationParser
 import com.mohdaie.baki.service.Notifier
@@ -73,7 +74,13 @@ class Repository(private val context: Context, db: AppDatabase) {
             AppSourceEntity(pkg, existing?.label ?: label, account, ignored = false, lastSeen = postedAt),
         )
 
-        val learned = if (parsed.type == TxType.EXPENSE) dao.ruleFor(merchantKey(parsed.merchant)) else null
+        val learned = dao.ruleFor(merchantKey(parsed.merchant))
+        // Expenses: learned or guessed category. Income: pre-tick "net salary" if you ticked it last time.
+        val category = when (parsed.type) {
+            TxType.EXPENSE -> learned?.takeIf { it != SALARY_TAG } ?: parsed.categoryId
+            TxType.INCOME -> learned?.takeIf { it == SALARY_TAG }
+            else -> null
+        }
         val pending = PendingEntity(
             packageName = pkg,
             appLabel = label,
@@ -82,7 +89,7 @@ class Repository(private val context: Context, db: AppDatabase) {
             fxText = parsed.fxText,
             merchant = parsed.merchant,
             type = parsed.type,
-            category = learned ?: parsed.categoryId,
+            category = category,
             account = account,
             postedAt = postedAt,
         )
@@ -101,7 +108,7 @@ class Repository(private val context: Context, db: AppDatabase) {
     suspend fun confirmPending(id: Long, draft: TxDraft? = null) {
         val p = dao.getPending(id) ?: return
         val d = draft ?: TxDraft(p.amount, p.type, p.category, p.merchant, p.account)
-        val category = if (d.type == TxType.EXPENSE) d.category else null
+        val category = storedCategory(d)
         dao.insertTransaction(
             TransactionEntity(
                 amount = d.amount,
@@ -119,6 +126,7 @@ class Repository(private val context: Context, db: AppDatabase) {
             learn(p.merchant, category)
             learn(d.merchant, category)
         }
+        if (category == SALARY_TAG) setSetting(SALARY, d.amount.toString())
         dao.deletePending(id)
         Notifier.cancel(context, id)
     }
@@ -129,7 +137,7 @@ class Repository(private val context: Context, db: AppDatabase) {
     }
 
     suspend fun saveTransaction(id: Long?, d: TxDraft, timestamp: Long) {
-        val category = if (d.type == TxType.EXPENSE) d.category else null
+        val category = storedCategory(d)
         if (id == null) {
             dao.insertTransaction(
                 TransactionEntity(
@@ -149,6 +157,14 @@ class Repository(private val context: Context, db: AppDatabase) {
             )
         }
         if (category != null) learn(d.merchant, category)
+        if (category == SALARY_TAG) setSetting(SALARY, d.amount.toString())
+    }
+
+    /** Expenses keep their category; income keeps only the "net salary" mark; transfers keep nothing. */
+    private fun storedCategory(d: TxDraft): String? = when (d.type) {
+        TxType.EXPENSE -> d.category?.takeIf { it != SALARY_TAG }
+        TxType.INCOME -> d.category?.takeIf { it == SALARY_TAG }
+        else -> null
     }
 
     suspend fun deleteTransaction(id: Long) = dao.deleteTransaction(id)

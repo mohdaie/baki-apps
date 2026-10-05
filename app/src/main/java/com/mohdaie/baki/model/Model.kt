@@ -6,6 +6,9 @@ object TxType {
     const val TRANSFER = "transfer"
 }
 
+/** Category value used on an income transaction to mark it as the month's net salary. */
+const val SALARY_TAG = "salary"
+
 object BudgetMode {
     const val AMOUNT = "amt"
     const val PERCENT = "pct"
