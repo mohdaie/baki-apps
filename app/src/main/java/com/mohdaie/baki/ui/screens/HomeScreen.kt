@@ -81,7 +81,7 @@ fun HomeScreen(
             }
         }
 
-        item { LeftToSpendCard(s.salary, s.paidTotal, s.spent, s.left) }
+        item { LeftToSpendCard(s.salary, s.income, s.paidTotal, s.spent, s.left) }
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,7 +164,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LeftToSpendCard(salary: Double, paid: Double, spent: Double, left: Double) {
+private fun LeftToSpendCard(salary: Double, income: Double, paid: Double, spent: Double, left: Double) {
     BrutalCard(background = AccentSoft, radius = 22.dp, contentPadding = PaddingValues(18.dp)) {
         CapsLabel("Left to spend this month", color = Deep)
         Spacer(Modifier.height(8.dp))
@@ -181,13 +181,15 @@ private fun LeftToSpendCard(salary: Double, paid: Double, spent: Double, left: D
             )
             Text(".${parts.getOrElse(1) { "00" }}", color = Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
         }
-        val pct = if (salary > 0) kotlin.math.max(0, (left / salary * 100).toInt()) else 0
-        Text("$pct% of net salary still free", color = Deep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        val base = salary + income
+        val pct = if (base > 0) kotlin.math.max(0, (left / base * 100).toInt()) else 0
+        Text("$pct% of this month's money still free", color = Deep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(10.dp))
         DashedRule()
         Spacer(Modifier.height(10.dp))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             KeyValueRow("Net salary", "RM ${Fmt.money(salary)}")
+            KeyValueRow("Income this month", "+ ${Fmt.money(income)}")
             KeyValueRow("Paid commitments", "− ${Fmt.money(paid)}")
             KeyValueRow("Spent this month", "− ${Fmt.money(spent)}")
         }

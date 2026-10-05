@@ -35,6 +35,7 @@ import com.mohdaie.baki.ui.theme.Ink
 class ReviewActivity : ComponentActivity() {
 
     private var focusId by mutableLongStateOf(-1L)
+    private var openLink by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +44,7 @@ class ReviewActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.light(AndroidColor.WHITE, AndroidColor.WHITE),
         )
         focusId = intent.getLongExtra(EXTRA_ID, -1L)
+        openLink = intent.getBooleanExtra(EXTRA_LINK, false)
 
         setContent {
             BakiTheme {
@@ -95,10 +97,11 @@ class ReviewActivity : ComponentActivity() {
                                 index = 1,
                                 total = ordered.size,
                                 accounts = accounts,
-                                matching = matchCommitment(p, commitments, payments),
+                                unpaidCommitments = unpaidCommitments(commitments, payments),
                                 onSave = { vm.confirmPending(p.id, it) },
                                 onIgnore = { vm.ignorePending(p.id) },
-                                onMarkCommitment = { vm.markPendingAsCommitment(p.id, it) },
+                                onLinkCommitment = { vm.markPendingAsCommitment(p.id, it) },
+                                startLinking = openLink && p.id == focusId,
                             )
                         }
                     }
@@ -111,14 +114,17 @@ class ReviewActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         focusId = intent.getLongExtra(EXTRA_ID, -1L)
+        openLink = intent.getBooleanExtra(EXTRA_LINK, false)
     }
 
     companion object {
         const val EXTRA_ID = "pending_id"
+        const val EXTRA_LINK = "open_link_commitment"
 
-        fun newIntent(context: Context, pendingId: Long): Intent =
+        fun newIntent(context: Context, pendingId: Long, linkCommitment: Boolean = false): Intent =
             Intent(context, ReviewActivity::class.java)
                 .putExtra(EXTRA_ID, pendingId)
+                .putExtra(EXTRA_LINK, linkCommitment)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }

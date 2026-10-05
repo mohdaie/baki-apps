@@ -12,7 +12,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -98,8 +101,9 @@ fun TransactionForm(
     onSecondary: () -> Unit,
     notification: PendingEntity? = null,
     counter: String? = null,
-    matching: CommitmentEntity? = null,
-    onMatchCommitment: ((CommitmentEntity) -> Unit)? = null,
+    unpaidCommitments: List<CommitmentEntity> = emptyList(),
+    onLinkCommitment: ((CommitmentEntity) -> Unit)? = null,
+    startLinking: Boolean = false,
 ) {
     var amount by remember(init.key) { mutableStateOf(init.amount?.let { Fmt.fixed2(it) } ?: "") }
     var type by remember(init.key) { mutableStateOf(init.type) }
@@ -118,27 +122,14 @@ fun TransactionForm(
 
         Text(title, color = Ink, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
 
-        if (matching != null && onMatchCommitment != null) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Amber)
-                    .border(2.dp, Ink, RoundedCornerShape(14.dp))
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Looks like ${matching.name}", color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Same amount as this month's commitment. Tick it instead so it isn't counted twice.",
-                        color = Muted,
-                        fontSize = 12.5.sp,
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                SmallButton("Mark paid", onClick = { onMatchCommitment(matching) }, background = Color.White)
-            }
+        if (onLinkCommitment != null) {
+            LinkCommitment(
+                key = init.key,
+                amount = amountValue,
+                unpaid = unpaidCommitments,
+                startOpen = startLinking,
+                onLink = onLinkCommitment,
+            )
         }
 
         // Amount
@@ -346,6 +337,91 @@ private fun CategoryOption(
     }
 }
 
+/**
+ * "Link to commitment": this payment is one of my monthly commitments.
+ * Picking one ticks it as paid for this month instead of adding an expense, so it isn't counted twice.
+ */
+@Composable
+private fun LinkCommitment(
+    key: Any,
+    amount: Double,
+    unpaid: List<CommitmentEntity>,
+    startOpen: Boolean,
+    onLink: (CommitmentEntity) -> Unit,
+) {
+    var open by remember(key) { mutableStateOf(startOpen) }
+    // Same amount first: it's most likely the one.
+    val ordered = remember(unpaid, amount) {
+        unpaid.sortedWith(compareBy<CommitmentEntity> { kotlin.math.abs(it.amount - amount) >= 0.01 }.thenBy { it.dueDay })
+    }
+    val likely = ordered.firstOrNull { kotlin.math.abs(it.amount - amount) < 0.01 }
+    val shape = RoundedCornerShape(14.dp)
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(if (likely != null) Amber else Color.White)
+            .border(2.dp, Ink, shape),
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable { open = !open }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = Ink, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Link to commitment", color = Ink, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    if (likely != null) "Looks like ${likely.name} (same amount)" else "Mark a commitment paid with this payment",
+                    color = Muted,
+                    fontSize = 12.5.sp,
+                )
+            }
+            Icon(
+                if (open) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = if (open) "Hide commitments" else "Show commitments",
+                tint = Ink,
+            )
+        }
+        if (open) {
+            Box(Modifier.fillMaxWidth().height(1.5.dp).background(Ink))
+            if (ordered.isEmpty()) {
+                Text(
+                    "No unpaid commitments this month.",
+                    color = Muted,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(14.dp),
+                )
+            }
+            ordered.forEachIndexed { i, c ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .clickable { onLink(c) }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(c.name, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("Due ${c.dueDay} · ${c.kind} · RM ${Fmt.money(c.amount)}", color = Muted, fontSize = 12.sp)
+                    }
+                    if (c == likely) {
+                        StatusPill("Same amount", AccentSoft, Green)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    SmallButton("Mark paid", onClick = { onLink(c) })
+                }
+                if (i < ordered.lastIndex) HairlineDivider()
+            }
+        }
+    }
+}
+
 /** Review of one captured notification (used by the in-app sheet and the over-other-apps popup). */
 @Composable
 fun PendingReview(
@@ -353,10 +429,11 @@ fun PendingReview(
     index: Int,
     total: Int,
     accounts: List<String>,
-    matching: CommitmentEntity?,
+    unpaidCommitments: List<CommitmentEntity>,
     onSave: (TxDraft) -> Unit,
     onIgnore: () -> Unit,
-    onMarkCommitment: (CommitmentEntity) -> Unit,
+    onLinkCommitment: (CommitmentEntity) -> Unit,
+    startLinking: Boolean = false,
 ) {
     TransactionForm(
         title = "New transaction detected",
@@ -377,8 +454,9 @@ fun PendingReview(
         onSecondary = onIgnore,
         notification = p,
         counter = "$index of $total",
-        matching = matching,
-        onMatchCommitment = onMarkCommitment,
+        unpaidCommitments = unpaidCommitments,
+        onLinkCommitment = onLinkCommitment,
+        startLinking = startLinking,
     )
 }
 

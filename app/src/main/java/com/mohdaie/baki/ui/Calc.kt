@@ -24,7 +24,9 @@ data class MonthSummary(
     val overdue: List<CommitmentEntity>,
     val nextDue: CommitmentEntity?,
     val spent: Double,
-    /** Net salary − paid commitments − this month's spending. */
+    /** Income recorded in Activity this month (refunds, transfers in, side income...). */
+    val income: Double,
+    /** Net salary + income − paid commitments − this month's spending. */
     val left: Double,
     val daysLeft: Int,
     val dailyAvailable: Double,
@@ -60,7 +62,8 @@ fun summarize(
 
     val expenses = monthTx.filter { it.type == TxType.EXPENSE }
     val spent = expenses.sumOf { it.amount }
-    val left = salary - paidTotal - spent
+    val income = monthTx.filter { it.type == TxType.INCOME }.sumOf { it.amount }
+    val left = salary + income - paidTotal - spent
     val daysLeft = if (isCurrent) month.lengthOfMonth() - today.dayOfMonth + 1 else month.lengthOfMonth()
     val available = salary - commitTotal
     val spentByCategory = expenses
@@ -76,6 +79,7 @@ fun summarize(
         overdue = overdue,
         nextDue = nextDue,
         spent = spent,
+        income = income,
         left = left,
         daysLeft = daysLeft,
         dailyAvailable = max(0.0, left) / max(1, daysLeft),
@@ -100,6 +104,15 @@ fun dueStatus(c: CommitmentEntity, paid: Boolean, month: YearMonth, today: Local
         diff <= 3 -> DueStatus(if (diff == 1) "Due tomorrow" else "Due in $diff days", Amber, AmberText)
         else -> DueStatus("Upcoming", Track, Muted)
     }
+}
+
+/** This month's commitments that aren't ticked as paid yet. */
+fun unpaidCommitments(
+    commitments: List<CommitmentEntity>,
+    payments: List<CommitmentPaymentEntity>,
+): List<CommitmentEntity> {
+    val paidIds = payments.map { it.commitmentId }.toSet()
+    return commitments.filter { it.id !in paidIds }
 }
 
 /** An unpaid commitment with the same amount as a captured notification — probably that bill. */

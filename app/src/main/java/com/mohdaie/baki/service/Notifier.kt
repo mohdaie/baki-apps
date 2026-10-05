@@ -61,7 +61,13 @@ object Notifier {
         if (p.type != TxType.EXPENSE || p.category != null) {
             builder.addAction(0, "Save", broadcast(context, QuickActionReceiver.ACTION_SAVE, p.id, base + 1))
         }
-        builder.addAction(0, "Review", open)
+        val linkCommitment = PendingIntent.getActivity(
+            context,
+            base + 3,
+            ReviewActivity.newIntent(context, p.id, linkCommitment = true),
+            flags,
+        )
+        builder.addAction(0, "Commitment", linkCommitment)
         builder.addAction(0, "Ignore", broadcast(context, QuickActionReceiver.ACTION_IGNORE, p.id, base + 2))
 
         NotificationManagerCompat.from(context).notify(notificationId(p.id), builder.build())

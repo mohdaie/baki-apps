@@ -181,10 +181,10 @@ fun BakiRoot(vm: AppViewModel = viewModel()) {
                 index = 1,
                 total = pending.size,
                 accounts = accounts,
-                matching = matchCommitment(current, commitments, payments),
+                unpaidCommitments = unpaidCommitments(commitments, payments),
                 onSave = { vm.confirmPending(current.id, it) },
                 onIgnore = { vm.ignorePending(current.id) },
-                onMarkCommitment = { vm.markPendingAsCommitment(current.id, it) },
+                onLinkCommitment = { vm.markPendingAsCommitment(current.id, it) },
             )
         }
     }
