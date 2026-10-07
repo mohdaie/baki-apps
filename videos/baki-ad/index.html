@@ -1,0 +1,1535 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1080" />
+    <title>Baki — 30s ad</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ink: #15171a;
+        --paper: #f4f3ee;
+        --card: #fffefa;
+        --grid: #e6e4dc;
+        --muted: #4b505a;
+        --accent: #1f7a4d;
+        --accent-soft: #cfead9;
+        --deep: #1c3b2a;
+        --red: #b8322a;
+        --red-on-dark: #ff7a6b;
+        --red-soft: #f6d6d3;
+        --amber: #fbefc6;
+        --display: "Archivo Black", "League Gothic", sans-serif;
+        --mono: "Space Mono", "JetBrains Mono", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ink);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: var(--mono);
+        color: var(--ink);
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .bg {
+        position: absolute;
+        inset: 0;
+      }
+      .bg-ink {
+        background: var(--ink);
+      }
+      .bg-paper {
+        background: var(--paper);
+      }
+      .bg-deep {
+        background: var(--deep);
+      }
+      .grid-lines {
+        position: absolute;
+        inset: -120px;
+        background-image:
+          linear-gradient(var(--grid) 2px, transparent 2px),
+          linear-gradient(90deg, var(--grid) 2px, transparent 2px);
+        background-size: 90px 90px;
+        opacity: 0.7;
+      }
+      .grid-dark {
+        position: absolute;
+        inset: -120px;
+        background-image:
+          linear-gradient(rgba(244, 243, 238, 0.05) 2px, transparent 2px),
+          linear-gradient(90deg, rgba(244, 243, 238, 0.05) 2px, transparent 2px);
+        background-size: 90px 90px;
+      }
+      .glow {
+        position: absolute;
+        width: 900px;
+        height: 900px;
+        left: 90px;
+        top: 90px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(184, 50, 42, 0.32), rgba(184, 50, 42, 0) 65%);
+      }
+      .ghost {
+        position: absolute;
+        font-family: var(--display);
+        font-size: 520px;
+        line-height: 1;
+        letter-spacing: -0.05em;
+        color: var(--ink);
+        opacity: 0.04;
+        white-space: nowrap;
+        left: -40px;
+        bottom: -110px;
+      }
+
+      /* ---------- shared UI pieces ---------- */
+      .brut {
+        background: var(--card);
+        border: 4px solid var(--ink);
+        border-radius: 22px;
+        box-shadow: 10px 10px 0 var(--ink);
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--mono);
+        font-weight: 700;
+        font-size: 26px;
+        letter-spacing: 0.04em;
+        padding: 10px 20px;
+        border: 3px solid var(--ink);
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+      .tag b {
+        color: var(--accent);
+      }
+      .content {
+        position: absolute;
+        inset: 0;
+        padding: 72px 72px 64px;
+        display: flex;
+        flex-direction: column;
+      }
+      .headline {
+        font-family: var(--display);
+        font-size: 96px;
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+        margin-top: 26px;
+      }
+      .headline .line {
+        display: block;
+      }
+      .hl-green {
+        color: var(--accent);
+      }
+      .stage {
+        position: relative;
+        flex: 1;
+        margin-top: 36px;
+      }
+      .mini-logo {
+        position: absolute;
+        top: 72px;
+        right: 72px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: var(--display);
+        font-size: 34px;
+        letter-spacing: -0.02em;
+      }
+      .mini-logo svg {
+        width: 54px;
+        height: 54px;
+      }
+
+      /* ---------- S1 payday ---------- */
+      #s1 .content,
+      #s2 .content {
+        align-items: center;
+        color: var(--paper);
+      }
+      .notif-stack {
+        position: relative;
+        width: 860px;
+        height: 420px;
+        margin-top: 6px;
+      }
+      .notif {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 860px;
+        height: 112px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 28px;
+        background: #26292e;
+        border: 2px solid #3a3e45;
+        border-radius: 24px;
+        color: var(--paper);
+      }
+      .notif .app {
+        flex: none;
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        font-family: var(--display);
+        font-size: 24px;
+        color: var(--ink);
+      }
+      .notif .txt {
+        flex: 1;
+        min-width: 0;
+      }
+      .notif .who {
+        font-size: 24px;
+        color: #b9bcc3;
+        font-weight: 700;
+      }
+      .notif .msg {
+        font-size: 29px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .notif .amt {
+        font-family: var(--display);
+        font-size: 36px;
+        color: var(--red-on-dark);
+      }
+      .s1-label {
+        font-weight: 700;
+        font-size: 30px;
+        letter-spacing: 0.18em;
+        color: var(--accent-soft);
+        margin-top: 40px;
+      }
+      .big-money {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 22px;
+        width: 936px;
+        margin-top: 4px;
+      }
+      .big-money .cur {
+        font-family: var(--display);
+        font-size: 90px;
+        color: var(--paper);
+      }
+      .big-money .num {
+        display: inline-block;
+        font-family: var(--display);
+        font-size: 230px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+        color: var(--paper);
+      }
+
+      /* ---------- S2 problem ---------- */
+      .chaos {
+        position: absolute;
+        inset: 0;
+      }
+      .chip {
+        position: absolute;
+        padding: 14px 22px;
+        border-radius: 16px;
+        background: #26292e;
+        border: 2px solid #3a3e45;
+        color: #d9dbe0;
+        font-weight: 700;
+        font-size: 26px;
+        white-space: nowrap;
+      }
+      .chip i {
+        font-style: normal;
+        color: var(--red-on-dark);
+      }
+      .s2-top {
+        position: relative;
+        font-weight: 700;
+        font-size: 30px;
+        letter-spacing: 0.18em;
+        color: #b9bcc3;
+        margin-top: 70px;
+      }
+      .s2-money {
+        position: relative;
+        display: flex;
+        align-items: baseline;
+        gap: 18px;
+        margin-top: 12px;
+      }
+      .s2-money .cur {
+        font-family: var(--display);
+        font-size: 80px;
+        color: var(--red-on-dark);
+      }
+      .s2-money .num {
+        display: inline-block;
+        font-family: var(--display);
+        font-size: 210px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        color: var(--red-on-dark);
+        font-variant-numeric: tabular-nums;
+      }
+      .s2-q {
+        position: relative;
+        margin-top: 44px;
+        text-align: center;
+        font-family: var(--display);
+        font-size: 112px;
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+        color: var(--paper);
+      }
+      .s2-q .line {
+        display: block;
+      }
+
+      /* ---------- S3 manual entry ---------- */
+      #s3 .content {
+        color: var(--paper);
+      }
+      .s3-head {
+        font-family: var(--display);
+        font-size: 84px;
+        line-height: 1;
+        letter-spacing: -0.035em;
+        margin-top: 40px;
+      }
+      .s3-head .line {
+        display: block;
+      }
+      .s3-head .dim {
+        color: #9a9ea6;
+      }
+      .form {
+        position: relative;
+        width: 760px;
+        margin: 70px auto 0;
+        padding: 36px 40px;
+        color: var(--ink);
+      }
+      .field {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 3px dashed var(--grid);
+        font-size: 32px;
+        font-weight: 700;
+      }
+      .field:last-child {
+        border-bottom: 0;
+      }
+      .field .k {
+        color: var(--muted);
+      }
+      .field .v {
+        min-width: 220px;
+        text-align: right;
+      }
+      .caret {
+        display: inline-block;
+        width: 4px;
+        height: 38px;
+        background: var(--ink);
+        vertical-align: middle;
+        margin-left: 4px;
+      }
+      .stamp {
+        position: absolute;
+        left: 50%;
+        top: 600px;
+        width: 900px;
+        margin-left: -450px;
+        padding: 22px 0;
+        text-align: center;
+        font-family: var(--display);
+        font-size: 62px;
+        white-space: nowrap;
+        letter-spacing: -0.02em;
+        color: var(--red-on-dark);
+        border: 8px solid var(--red-on-dark);
+        border-radius: 18px;
+        background: rgba(21, 23, 26, 0.92);
+      }
+
+      /* ---------- S4 reveal ---------- */
+      .reveal {
+        position: absolute;
+        inset: 0;
+        background: var(--paper);
+      }
+      .burst {
+        position: absolute;
+        left: 540px;
+        top: 400px;
+        width: 0;
+        height: 0;
+      }
+      .burst i {
+        position: absolute;
+        left: -6px;
+        top: -60px;
+        width: 12px;
+        height: 60px;
+        border-radius: 6px;
+        background: var(--accent);
+        transform-origin: 6px 60px;
+      }
+      .s4-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 230px;
+      }
+      .logo-tile {
+        width: 290px;
+        height: 290px;
+        border-radius: 64px;
+        background: var(--accent-soft);
+        border: 6px solid var(--ink);
+        box-shadow: 16px 16px 0 var(--ink);
+        display: grid;
+        place-items: center;
+      }
+      .logo-tile svg {
+        width: 230px;
+        height: 230px;
+      }
+      .s4-title {
+        margin-top: 56px;
+        font-family: var(--display);
+        font-size: 140px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .s4-sub {
+        position: relative;
+        margin-top: 26px;
+        font-size: 42px;
+        font-weight: 700;
+      }
+      .marker {
+        position: relative;
+        display: inline-block;
+        isolation: isolate;
+      }
+      .marker .hl {
+        position: absolute;
+        left: -8px;
+        right: -8px;
+        bottom: 2px;
+        height: 22px;
+        display: block;
+        background: var(--accent-soft);
+        transform-origin: left center;
+      }
+      .marker .t {
+        position: relative;
+        color: var(--accent);
+      }
+
+      /* ---------- S5 capture ---------- */
+      .phone-notif {
+        position: absolute;
+        left: 0;
+        top: 10px;
+        width: 936px;
+        height: 132px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 30px;
+        background: var(--card);
+        border: 4px solid var(--ink);
+        border-radius: 26px;
+      }
+      .phone-notif .app {
+        flex: none;
+        width: 66px;
+        height: 66px;
+        border-radius: 18px;
+        background: #ffd52e;
+        border: 3px solid var(--ink);
+        display: grid;
+        place-items: center;
+        font-family: var(--display);
+        font-size: 22px;
+      }
+      .phone-notif .who {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .phone-notif .msg {
+        font-size: 32px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .review {
+        position: absolute;
+        left: 90px;
+        top: 0;
+        width: 756px;
+        height: 420px;
+        padding: 30px 36px;
+        display: flex;
+        flex-direction: column;
+      }
+      .review .rv-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+      }
+      .rv-dot {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-right: 10px;
+      }
+      .rv-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-top: 22px;
+      }
+      .rv-merchant {
+        font-family: var(--display);
+        font-size: 60px;
+        letter-spacing: -0.03em;
+      }
+      .rv-amount {
+        font-family: var(--display);
+        font-size: 60px;
+        letter-spacing: -0.03em;
+      }
+      .rv-chips {
+        display: flex;
+        gap: 14px;
+        margin-top: 22px;
+      }
+      .rv-chip {
+        font-size: 26px;
+        font-weight: 700;
+        padding: 8px 18px;
+        border-radius: 999px;
+        border: 3px solid var(--ink);
+        background: var(--paper);
+      }
+      .rv-chip.cat {
+        background: var(--accent-soft);
+      }
+      .rv-btns {
+        display: flex;
+        gap: 18px;
+        margin-top: auto;
+      }
+      .btn {
+        flex: 1;
+        height: 88px;
+        border-radius: 18px;
+        border: 4px solid var(--ink);
+        display: grid;
+        place-items: center;
+        font-family: var(--display);
+        font-size: 36px;
+      }
+      .btn.ghosty {
+        background: var(--card);
+        color: var(--muted);
+      }
+      .btn.save {
+        background: var(--accent);
+        color: var(--card);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+      .cursor {
+        position: absolute;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(21, 23, 26, 0.18);
+        border: 4px solid var(--ink);
+      }
+      .ripple {
+        position: absolute;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 5px solid var(--accent);
+      }
+      .act-row {
+        position: absolute;
+        left: 0;
+        top: 470px;
+        width: 936px;
+        height: 118px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 30px;
+      }
+      .act-ico {
+        flex: none;
+        width: 66px;
+        height: 66px;
+        border-radius: 18px;
+        border: 3px solid var(--ink);
+        background: var(--amber);
+        display: grid;
+        place-items: center;
+      }
+      .act-ico svg {
+        width: 40px;
+        height: 40px;
+      }
+      .act-row .name {
+        font-family: var(--display);
+        font-size: 36px;
+      }
+      .act-row .sub {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .act-row .amt {
+        margin-left: auto;
+        font-family: var(--display);
+        font-size: 40px;
+      }
+      .saved-pill {
+        flex: none;
+        font-size: 24px;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--card);
+      }
+      .banks {
+        position: absolute;
+        left: 0;
+        top: 330px;
+        width: 936px;
+      }
+      .banks .lbl {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      .banks .row {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 12px;
+      }
+      .bank {
+        font-family: var(--display);
+        font-size: 29px;
+        padding: 10px 18px;
+        border: 3px solid var(--ink);
+        border-radius: 999px;
+        background: var(--card);
+      }
+      .caption {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        font-size: 38px;
+        font-weight: 700;
+      }
+      .caption b {
+        color: var(--accent);
+      }
+
+      /* ---------- S6 left to spend ---------- */
+      .home-card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 936px;
+        height: 560px;
+        padding: 34px 40px;
+      }
+      .lts-label {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+      }
+      .lts {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        margin-top: 4px;
+      }
+      .lts .cur {
+        font-family: var(--display);
+        font-size: 60px;
+      }
+      .lts .num {
+        display: inline-block;
+        font-family: var(--display);
+        font-size: 140px;
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+      }
+      .eq {
+        display: flex;
+        gap: 14px;
+        margin-top: 10px;
+      }
+      .eq-chip {
+        font-size: 25px;
+        font-weight: 700;
+        padding: 10px 16px;
+        border-radius: 14px;
+        border: 3px solid var(--ink);
+        background: var(--paper);
+        white-space: nowrap;
+      }
+      .eq-chip.minus {
+        background: var(--red-soft);
+      }
+      .bar {
+        position: relative;
+        height: 30px;
+        margin-top: 34px;
+        border: 3px solid var(--ink);
+        border-radius: 999px;
+        background: var(--paper);
+        overflow: hidden;
+      }
+      .bar-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 31%;
+        background: var(--accent);
+        transform-origin: left center;
+      }
+      .bar-note {
+        margin-top: 14px;
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .today {
+        position: absolute;
+        right: 36px;
+        bottom: -40px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 18px 26px;
+        background: var(--amber);
+        border: 4px solid var(--ink);
+        border-radius: 20px;
+        box-shadow: 8px 8px 0 var(--ink);
+      }
+      .today .k {
+        font-size: 24px;
+        font-weight: 700;
+        color: #6e4e00;
+      }
+      .today .v {
+        font-family: var(--display);
+        font-size: 50px;
+        letter-spacing: -0.02em;
+      }
+
+      /* ---------- S7 commitments ---------- */
+      .list-card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 936px;
+        padding: 14px 36px 18px;
+      }
+      .crow {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        height: 104px;
+        border-bottom: 3px solid var(--grid);
+      }
+      .crow:last-of-type {
+        border-bottom: 0;
+      }
+      .box {
+        position: relative;
+        flex: none;
+        width: 58px;
+        height: 58px;
+        border-radius: 14px;
+        border: 4px solid var(--ink);
+        background: var(--card);
+        overflow: hidden;
+      }
+      .box .fill {
+        position: absolute;
+        inset: 0;
+        background: var(--accent);
+      }
+      .box svg {
+        position: absolute;
+        inset: 6px;
+        width: 38px;
+        height: 38px;
+      }
+      .crow .nm {
+        font-family: var(--display);
+        font-size: 40px;
+        letter-spacing: -0.02em;
+      }
+      .crow .due {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .crow .amt {
+        margin-left: auto;
+        font-family: var(--display);
+        font-size: 40px;
+      }
+      .paid-tag {
+        flex: none;
+        font-size: 22px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 2px solid var(--accent);
+      }
+      .counter-pill {
+        position: absolute;
+        right: 30px;
+        top: -34px;
+        padding: 12px 22px;
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 999px;
+        font-size: 28px;
+        font-weight: 700;
+      }
+
+      /* ---------- S8 privacy ---------- */
+      .s8-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        gap: 56px;
+      }
+      .lock-tile {
+        flex: none;
+        width: 300px;
+        height: 300px;
+        border-radius: 56px;
+        background: var(--accent);
+        border: 6px solid var(--ink);
+        box-shadow: 14px 14px 0 var(--ink);
+        display: grid;
+        place-items: center;
+      }
+      .lock-tile svg {
+        width: 170px;
+        height: 170px;
+      }
+      .facts {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .fact {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 34px;
+        font-weight: 700;
+      }
+      .fact .x {
+        flex: none;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: var(--ink);
+        color: var(--paper);
+        display: grid;
+        place-items: center;
+        font-family: var(--display);
+        font-size: 26px;
+      }
+
+      /* ---------- S9 CTA ---------- */
+      .s9-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 170px;
+        color: var(--paper);
+      }
+      .s9-center .logo-tile {
+        width: 250px;
+        height: 250px;
+        border-radius: 56px;
+        border-color: var(--ink);
+      }
+      .s9-center .logo-tile svg {
+        width: 200px;
+        height: 200px;
+      }
+      .s9-title {
+        margin-top: 46px;
+        font-family: var(--display);
+        font-size: 150px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .s9-tag {
+        margin-top: 18px;
+        font-family: var(--display);
+        font-size: 58px;
+        letter-spacing: -0.02em;
+        color: var(--accent-soft);
+      }
+      .s9-cta {
+        margin-top: 56px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 22px 40px;
+        background: var(--paper);
+        color: var(--ink);
+        border: 4px solid var(--ink);
+        border-radius: 999px;
+        box-shadow: 8px 8px 0 var(--ink);
+        font-family: var(--display);
+        font-size: 40px;
+      }
+      .s9-cta svg {
+        width: 44px;
+        height: 44px;
+      }
+      .s9-foot {
+        position: absolute;
+        bottom: 56px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--accent-soft);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1080"
+    >
+      <!-- ================= S1 · PAYDAY (0 – 3.6) ================= -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.6" data-track-index="0">
+        <div class="bg bg-ink"></div>
+        <div class="grid-dark" id="s1-grid"></div>
+        <div class="content">
+          <div class="notif-stack" id="s1-stack">
+            <div class="notif" id="n4">
+              <div class="app" style="background: #e43d3d">CI</div>
+              <div class="txt">
+                <div class="who">CIMB · now</div>
+                <div class="msg">Payment to SHOPEE MY</div>
+              </div>
+              <div class="amt">−129.00</div>
+            </div>
+            <div class="notif" id="n3">
+              <div class="app" style="background: #3ecf6f">GP</div>
+              <div class="txt">
+                <div class="who">GrabPay · now</div>
+                <div class="msg">GrabFood order paid</div>
+              </div>
+              <div class="amt">−23.40</div>
+            </div>
+            <div class="notif" id="n2">
+              <div class="app" style="background: #4f8fff">TNG</div>
+              <div class="txt">
+                <div class="who">TNG eWallet · now</div>
+                <div class="msg">Toll · PLUS Highway</div>
+              </div>
+              <div class="amt">−48.90</div>
+            </div>
+            <div class="notif" id="n1">
+              <div class="app" style="background: #ffd52e">MAE</div>
+              <div class="txt">
+                <div class="who">MAE by Maybank · now</div>
+                <div class="msg">Car loan · auto-debit</div>
+              </div>
+              <div class="amt">−650.00</div>
+            </div>
+          </div>
+          <div class="s1-label" id="s1-label">25TH · PAYDAY</div>
+          <div class="big-money" id="s1-money">
+            <span class="cur">RM</span><span class="num" id="s1-num">0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S2 · WHERE DID IT GO (3.6 – 7.0) ================= -->
+      <section id="s2" class="scene clip" data-start="3.6" data-duration="3.4" data-track-index="0">
+        <div class="bg bg-ink"></div>
+        <div class="glow" id="s2-glow"></div>
+        <div class="chaos" id="s2-chaos" data-layout-allow-overlap>
+          <div class="chip" style="left: 40px; top: 120px; transform: rotate(-8deg)">Wise · <i>−210.00</i></div>
+          <div class="chip" style="left: 720px; top: 90px; transform: rotate(6deg)">TNG · <i>−12.50</i></div>
+          <div class="chip" style="left: 800px; top: 770px; transform: rotate(-4deg)">GrabPay · <i>−31.80</i></div>
+          <div class="chip" style="left: 40px; top: 760px; transform: rotate(5deg)">MAE · <i>−86.00</i></div>
+          <div class="chip" style="left: 60px; top: 860px; transform: rotate(-6deg)">CIMB · <i>−54.20</i></div>
+          <div class="chip" style="left: 700px; top: 880px; transform: rotate(7deg)">TNG · <i>−9.90</i></div>
+          <div class="chip" style="left: 400px; top: 960px; transform: rotate(-3deg)">MAE · <i>−300.00</i></div>
+          <div class="chip" style="left: 380px; top: 40px; transform: rotate(3deg)">GrabPay · <i>−18.00</i></div>
+          <div class="chip" style="left: 790px; top: 620px; transform: rotate(-7deg)">Wise · <i>−75.00</i></div>
+          <div class="chip" style="left: 20px; top: 620px; transform: rotate(8deg)">CIMB · <i>−42.60</i></div>
+        </div>
+        <div class="content">
+          <div class="s2-top" id="s2-top">15TH · TWO WEEKS LATER</div>
+          <div class="s2-money" id="s2-money">
+            <span class="cur">RM</span><span class="num" id="s2-num">3,349</span>
+          </div>
+          <div class="s2-q" id="s2-q">
+            <span class="line" id="s2-q1">Where did it</span>
+            <span class="line" id="s2-q2">all go?</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S3 · MANUAL ENTRY (7.0 – 10.0) ================= -->
+      <section id="s3" class="scene clip" data-start="7" data-duration="3" data-track-index="0">
+        <div class="bg bg-ink"></div>
+        <div class="grid-dark"></div>
+        <div class="content" id="s3-content">
+          <div class="s3-head">
+            <span class="line" id="s3-h1">Budget apps?</span>
+            <span class="line dim" id="s3-h2">Type every. Single.</span>
+            <span class="line dim" id="s3-h3">Expense.</span>
+          </div>
+          <div class="form brut" id="s3-form" data-layout-allow-overlap>
+            <div class="field">
+              <span class="k">Amount</span><span class="v"><span id="s3-type">RM </span><span class="caret" id="s3-caret"></span></span>
+            </div>
+            <div class="field"><span class="k">Merchant</span><span class="v" style="color: #8a8e97">…</span></div>
+            <div class="field"><span class="k">Category</span><span class="v" style="color: #8a8e97">Select ▾</span></div>
+          </div>
+        </div>
+        <div class="stamp" id="s3-stamp" data-layout-allow-overlap>NOBODY KEEPS THAT UP.</div>
+      </section>
+
+      <!-- ================= S4 · MEET BAKI (10.0 – 12.5) ================= -->
+      <section id="s4" class="scene clip" data-start="10" data-duration="2.5" data-track-index="0">
+        <div class="bg bg-ink"></div>
+        <div class="reveal" id="s4-reveal">
+          <div class="grid-lines" id="s4-grid"></div>
+          <div class="ghost">BAKI</div>
+          <div class="burst" id="s4-burst">
+            <i style="transform: rotate(0deg) translateY(-190px)"></i>
+            <i style="transform: rotate(30deg) translateY(-190px)"></i>
+            <i style="transform: rotate(60deg) translateY(-190px)"></i>
+            <i style="transform: rotate(90deg) translateY(-190px)"></i>
+            <i style="transform: rotate(120deg) translateY(-190px)"></i>
+            <i style="transform: rotate(150deg) translateY(-190px)"></i>
+            <i style="transform: rotate(180deg) translateY(-190px)"></i>
+            <i style="transform: rotate(210deg) translateY(-190px)"></i>
+            <i style="transform: rotate(240deg) translateY(-190px)"></i>
+            <i style="transform: rotate(270deg) translateY(-190px)"></i>
+            <i style="transform: rotate(300deg) translateY(-190px)"></i>
+            <i style="transform: rotate(330deg) translateY(-190px)"></i>
+          </div>
+          <div class="s4-center">
+            <div class="logo-tile" id="s4-logo">
+              <svg viewBox="24 32 60 50" aria-hidden="true">
+                <path fill="#15171A" d="M37,42h38a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-26a4,4 0,0 1,4 -4z" />
+                <path fill="#FFFFFF" stroke="#15171A" stroke-width="3" d="M33,38h38a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-26a4,4 0,0 1,4 -4z" />
+                <path fill="#1F7A4D" stroke="#15171A" stroke-width="3" d="M59,49h16v12h-16a6,6 0,0 1,0 -12z" />
+                <circle fill="#FFFFFF" cx="61.5" cy="55" r="2.5" />
+              </svg>
+            </div>
+            <div class="s4-title" id="s4-title">Meet Baki.</div>
+            <div class="s4-sub" id="s4-sub">
+              The budget that
+              <span class="marker"><span class="hl" id="s4-hl"></span><span class="t">fills itself.</span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S5 · AUTO-CAPTURE (12.5 – 16.5) ================= -->
+      <section id="s5" class="scene clip" data-start="12.5" data-duration="4" data-track-index="0">
+        <div class="bg bg-paper"></div>
+        <div class="grid-lines" id="s5-grid"></div>
+        <div class="mini-logo" id="s5-mini">
+          <svg viewBox="24 32 60 50" aria-hidden="true">
+            <path fill="#15171A" d="M37,42h38a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-26a4,4 0,0 1,4 -4z" />
+            <path fill="#FFFFFF" stroke="#15171A" stroke-width="3" d="M33,38h38a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-26a4,4 0,0 1,4 -4z" />
+            <path fill="#1F7A4D" stroke="#15171A" stroke-width="3" d="M59,49h16v12h-16a6,6 0,0 1,0 -12z" />
+          </svg>
+          Baki
+        </div>
+        <div class="content">
+          <div><span class="tag" id="s5-tag"><b>01</b> AUTO-CAPTURE</span></div>
+          <div class="headline">
+            <span class="line" id="s5-h1">It reads your</span>
+            <span class="line hl-green" id="s5-h2">bank alerts.</span>
+          </div>
+          <div class="stage">
+            <div class="phone-notif" id="s5-notif">
+              <div class="app">MAE</div>
+              <div>
+                <div class="who">MAE by Maybank · now</div>
+                <div class="msg">You've paid RM18.50 to TOYYIBPAY</div>
+              </div>
+            </div>
+            <div class="review brut" id="s5-review">
+              <div class="rv-top"><span><span class="rv-dot"></span>NEW PAYMENT</span><span>MAYBANK</span></div>
+              <div class="rv-main">
+                <span class="rv-merchant">Toyyibpay</span><span class="rv-amount">RM 18.50</span>
+              </div>
+              <div class="rv-chips">
+                <span class="rv-chip cat">Food &amp; Drink</span><span class="rv-chip">Maybank</span>
+              </div>
+              <div class="rv-btns">
+                <div class="btn ghosty">Ignore</div>
+                <div class="btn save" id="s5-save">Save</div>
+              </div>
+            </div>
+            <div class="ripple" id="s5-ripple" style="left: 618px; top: 300px"></div>
+            <div class="cursor" id="s5-cursor" style="left: 618px; top: 300px"></div>
+            <div class="act-row brut" id="s5-row">
+              <div class="act-ico">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="none" stroke="#15171A" stroke-width="2.4" stroke-linecap="round" d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 1-3 4-3 7h3v11" />
+                </svg>
+              </div>
+              <div>
+                <div class="name">Toyyibpay</div>
+                <div class="sub">Food &amp; Drink · Maybank</div>
+              </div>
+              <span class="saved-pill" id="s5-pill">SAVED</span>
+              <div class="amt">−18.50</div>
+            </div>
+            <div class="banks" id="s5-banks">
+              <div class="lbl">Works with your bank &amp; e-wallet alerts</div>
+              <div class="row">
+                <span class="bank">Maybank / MAE</span><span class="bank">TNG</span><span class="bank">GrabPay</span><span class="bank">CIMB</span><span class="bank">Wise</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S6 · LEFT TO SPEND (16.5 – 20.0) ================= -->
+      <section id="s6" class="scene clip" data-start="16.5" data-duration="3.5" data-track-index="0">
+        <div class="bg bg-paper"></div>
+        <div class="grid-lines" id="s6-grid"></div>
+        <div class="content">
+          <div><span class="tag" id="s6-tag"><b>02</b> LEFT TO SPEND</span></div>
+          <div class="headline">
+            <span class="line" id="s6-h1">Know exactly</span>
+            <span class="line hl-green" id="s6-h2">what's left.</span>
+          </div>
+          <div class="stage">
+            <div class="home-card brut" id="s6-card">
+              <div class="lts-label">LEFT TO SPEND · OCTOBER</div>
+              <div class="lts"><span class="cur">RM</span><span class="num" id="s6-num">4,200.00</span></div>
+              <div class="eq">
+                <span class="eq-chip" id="s6-c1">Salary 4,200</span>
+                <span class="eq-chip minus" id="s6-c2">− Bills 1,550</span>
+                <span class="eq-chip minus" id="s6-c3">− Spent 1,365.40</span>
+              </div>
+              <div class="bar"><div class="bar-fill" id="s6-bar"></div></div>
+              <div class="bar-note" id="s6-note">31% of this month's money still free</div>
+              <div class="today" id="s6-today">
+                <div class="k">AVAILABLE<br />TODAY</div>
+                <div class="v">RM 85.64</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S7 · COMMITMENTS (20.0 – 23.5) ================= -->
+      <section id="s7" class="scene clip" data-start="20" data-duration="3.5" data-track-index="0">
+        <div class="bg bg-paper"></div>
+        <div class="grid-lines" id="s7-grid"></div>
+        <div class="content">
+          <div><span class="tag" id="s7-tag"><b>03</b> COMMITMENTS</span></div>
+          <div class="headline">
+            <span class="line" id="s7-h1">Bills come</span>
+            <span class="line hl-green" id="s7-h2">off first.</span>
+          </div>
+          <div class="stage">
+            <div class="list-card brut" id="s7-card">
+              <div class="crow" id="r1">
+                <div class="box"><div class="fill"></div><svg viewBox="0 0 24 24"><path class="ck" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+                <div><div class="nm">Car loan</div><div class="due">Due 1st</div></div>
+                <span class="paid-tag">PAID</span>
+                <div class="amt">650</div>
+              </div>
+              <div class="crow" id="r2">
+                <div class="box"><div class="fill"></div><svg viewBox="0 0 24 24"><path class="ck" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+                <div><div class="nm">Rent</div><div class="due">Due 5th</div></div>
+                <span class="paid-tag">PAID</span>
+                <div class="amt">700</div>
+              </div>
+              <div class="crow" id="r3">
+                <div class="box"><div class="fill"></div><svg viewBox="0 0 24 24"><path class="ck" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+                <div><div class="nm">PTPTN</div><div class="due">Due 10th</div></div>
+                <span class="paid-tag">PAID</span>
+                <div class="amt">100</div>
+              </div>
+              <div class="crow" id="r4">
+                <div class="box"><div class="fill"></div><svg viewBox="0 0 24 24"><path class="ck" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+                <div><div class="nm">Unifi</div><div class="due">Due 15th</div></div>
+                <span class="paid-tag">PAID</span>
+                <div class="amt">100</div>
+              </div>
+              <div class="counter-pill" id="s7-pill"><span id="s7-count">0</span> / 4 paid</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S8 · PRIVATE (23.5 – 26.0) ================= -->
+      <section id="s8" class="scene clip" data-start="23.5" data-duration="2.5" data-track-index="0">
+        <div class="bg bg-paper"></div>
+        <div class="grid-lines" id="s8-grid"></div>
+        <div class="content">
+          <div><span class="tag" id="s8-tag"><b>04</b> PRIVATE</span></div>
+          <div class="headline">
+            <span class="line" id="s8-h1">Your money stays</span>
+            <span class="line hl-green" id="s8-h2">on your phone.</span>
+          </div>
+          <div class="stage">
+            <div class="s8-wrap">
+              <div class="lock-tile" id="s8-lock">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path id="s8-shackle" fill="none" stroke="#fffefa" stroke-width="2.6" stroke-linecap="round" d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3" />
+                  <rect x="4.5" y="11" width="15" height="10" rx="2.5" fill="#fffefa" />
+                  <circle cx="12" cy="15.6" r="1.6" fill="#1F7A4D" />
+                </svg>
+              </div>
+              <div class="facts">
+                <div class="fact" id="f1"><span class="x">✕</span>No internet access</div>
+                <div class="fact" id="f2"><span class="x">✕</span>No account</div>
+                <div class="fact" id="f3"><span class="x">✕</span>No cloud</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S9 · CTA (26.0 – 30.0) ================= -->
+      <section id="s9" class="scene clip" data-start="26" data-duration="4" data-track-index="0">
+        <div class="bg bg-deep"></div>
+        <div class="grid-dark" id="s9-grid"></div>
+        <div class="s9-center">
+          <div class="logo-tile" id="s9-logo">
+            <svg viewBox="24 32 60 50" aria-hidden="true">
+              <path fill="#15171A" d="M37,42h38a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-26a4,4 0,0 1,4 -4z" />
+              <path fill="#FFFFFF" stroke="#15171A" stroke-width="3" d="M33,38h38a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-26a4,4 0,0 1,4 -4z" />
+              <path fill="#1F7A4D" stroke="#15171A" stroke-width="3" d="M59,49h16v12h-16a6,6 0,0 1,0 -12z" />
+              <circle fill="#FFFFFF" cx="61.5" cy="55" r="2.5" />
+            </svg>
+          </div>
+          <div class="s9-title" id="s9-title">Baki</div>
+          <div class="s9-tag" id="s9-tag">Know what's left. Every day.</div>
+          <div class="s9-cta" id="s9-cta">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#1F7A4D" d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.85 1.23 12.95 1 12 1c-.96 0-1.86.23-2.66.63L7.85.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31C6.97 3.26 6 5.01 6 7h12c0-1.99-.97-3.75-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z" />
+            </svg>
+            Get Baki for Android
+          </div>
+        </div>
+        <div class="s9-foot" id="s9-foot">AUTO-CAPTURE · LEFT TO SPEND · 100% ON-DEVICE</div>
+      </section>
+
+      <!-- ================= AUDIO ================= -->
+      <audio id="bgm" src="assets/audio/bgm.mp3" data-start="0" data-duration="30" data-volume="0.8" data-track-index="10"></audio>
+
+      <audio id="sfx-n1" src="assets/audio/notification.mp3" data-start="1.5" data-duration="1.2" data-volume="0.55" data-track-index="11"></audio>
+      <audio id="sfx-n2" src="assets/audio/pop.mp3" data-start="1.95" data-duration="0.7" data-volume="0.6" data-track-index="12"></audio>
+      <audio id="sfx-n3" src="assets/audio/pop.mp3" data-start="2.4" data-duration="0.7" data-volume="0.6" data-track-index="13"></audio>
+      <audio id="sfx-n4" src="assets/audio/pop.mp3" data-start="2.85" data-duration="0.7" data-volume="0.6" data-track-index="11"></audio>
+      <audio id="sfx-glitch" src="assets/audio/glitch-1.mp3" data-start="3.6" data-duration="1.2" data-volume="0.35" data-track-index="11"></audio>
+      <audio id="sfx-q" src="assets/audio/whoosh.mp3" data-start="5.0" data-duration="0.57" data-volume="0.5" data-track-index="11"></audio>
+      <audio id="sfx-stamp" src="assets/audio/error.mp3" data-start="8.55" data-duration="1.4" data-volume="0.55" data-track-index="11"></audio>
+      <audio id="sfx-reveal" src="assets/audio/impact-bass-1.mp3" data-start="10" data-duration="2.1" data-volume="0.9" data-track-index="11"></audio>
+      <audio id="sfx-sparkle1" src="assets/audio/sparkle.mp3" data-start="11.1" data-duration="1.4" data-volume="0.35" data-track-index="12"></audio>
+      <audio id="sfx-w5" src="assets/audio/whoosh.mp3" data-start="12.45" data-duration="0.57" data-volume="0.45" data-track-index="11"></audio>
+      <audio id="sfx-n5" src="assets/audio/notification.mp3" data-start="13.0" data-duration="1.2" data-volume="0.5" data-track-index="12"></audio>
+      <audio id="sfx-morph" src="assets/audio/whoosh-short.mp3" data-start="13.7" data-duration="0.57" data-volume="0.45" data-track-index="11"></audio>
+      <audio id="sfx-tap" src="assets/audio/click.mp3" data-start="14.9" data-duration="0.36" data-volume="0.8" data-track-index="11"></audio>
+      <audio id="sfx-saved" src="assets/audio/pop.mp3" data-start="15.35" data-duration="0.7" data-volume="0.6" data-track-index="11"></audio>
+      <audio id="sfx-w6" src="assets/audio/whoosh.mp3" data-start="16.45" data-duration="0.57" data-volume="0.45" data-track-index="11"></audio>
+      <audio id="sfx-c1" src="assets/audio/click.mp3" data-start="17.3" data-duration="0.36" data-volume="0.6" data-track-index="11"></audio>
+      <audio id="sfx-c2" src="assets/audio/click.mp3" data-start="17.8" data-duration="0.36" data-volume="0.6" data-track-index="11"></audio>
+      <audio id="sfx-c3" src="assets/audio/click.mp3" data-start="18.3" data-duration="0.36" data-volume="0.6" data-track-index="11"></audio>
+      <audio id="sfx-today" src="assets/audio/chime.mp3" data-start="19.0" data-duration="1.0" data-volume="0.4" data-track-index="11"></audio>
+      <audio id="sfx-w7" src="assets/audio/whoosh.mp3" data-start="19.95" data-duration="0.57" data-volume="0.45" data-track-index="12"></audio>
+      <audio id="sfx-t1" src="assets/audio/click.mp3" data-start="21.0" data-duration="0.36" data-volume="0.7" data-track-index="11"></audio>
+      <audio id="sfx-t2" src="assets/audio/click.mp3" data-start="21.5" data-duration="0.36" data-volume="0.7" data-track-index="11"></audio>
+      <audio id="sfx-t3" src="assets/audio/click.mp3" data-start="22.0" data-duration="0.36" data-volume="0.7" data-track-index="11"></audio>
+      <audio id="sfx-t4" src="assets/audio/click.mp3" data-start="22.5" data-duration="0.36" data-volume="0.7" data-track-index="11"></audio>
+      <audio id="sfx-w8" src="assets/audio/whoosh.mp3" data-start="23.45" data-duration="0.57" data-volume="0.45" data-track-index="11"></audio>
+      <audio id="sfx-lock" src="assets/audio/pop.mp3" data-start="24.0" data-duration="0.7" data-volume="0.6" data-track-index="12"></audio>
+      <audio id="sfx-cta" src="assets/audio/impact-bass-1.mp3" data-start="26" data-duration="2.1" data-volume="0.75" data-track-index="11"></audio>
+      <audio id="sfx-sparkle2" src="assets/audio/sparkle.mp3" data-start="27.4" data-duration="1.6" data-volume="0.35" data-track-index="12"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const $ = (s) => document.querySelector(s);
+      const fmt0 = (v) => Math.round(v).toLocaleString("en-US");
+      const fmt2 = (v) =>
+        v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // Counter helper: proxy value -> text, seek-safe via onUpdate.
+      function count(el, from, to, dur, at, f, ease) {
+        const s = { v: from };
+        tl.fromTo(
+          s,
+          { v: from },
+          { v: to, duration: dur, ease: ease || "power2.out", immediateRender: false, onUpdate: () => (el.textContent = f(s.v)) },
+          at,
+        );
+      }
+      // Finite shake.
+      function shake(el, at, amp, n) {
+        for (let i = 0; i < n; i++) {
+          tl.to(el, { x: i % 2 ? -amp : amp, duration: 0.04, ease: "none" }, at + i * 0.04);
+        }
+        tl.to(el, { x: 0, duration: 0.05, ease: "none" }, at + n * 0.04);
+      }
+
+      // ============ S1 · PAYDAY (0 – 3.6) ============
+      tl.fromTo("#s1-grid", { y: 0 }, { y: 90, duration: 3.6, ease: "none" }, 0);
+      tl.fromTo("#s1-label", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.1);
+      tl.fromTo("#s1-money", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.9, ease: "expo.out" }, 0.15);
+      count($("#s1-num"), 0, 4200, 1.0, 0.15, fmt0, "expo.out");
+      tl.to("#s1-num", { color: "#cfead9", duration: 0.3 }, 1.0);
+
+      // notifications drop in, stack pushes down
+      const notifs = ["#n1", "#n2", "#n3", "#n4"];
+      const nAt = [1.5, 1.95, 2.4, 2.85];
+      const after = [3550, 3501.1, 3477.7, 3348.7];
+      notifs.forEach((id, i) => {
+        tl.fromTo(id, { y: -160, opacity: 0, scale: 0.92 }, { y: 0, opacity: 1, scale: 1, duration: 0.32, ease: "back.out(1.6)" }, nAt[i]);
+        // push older ones down
+        for (let j = 0; j < i; j++) {
+          const depth = i - j;
+          tl.to(notifs[j], { y: depth * 98, scale: 1 - depth * 0.05, opacity: 1 - depth * 0.22, duration: 0.3, ease: "power3.out" }, nAt[i]);
+        }
+        const prev = i === 0 ? 4200 : after[i - 1];
+        count($("#s1-num"), prev, after[i], 0.3, nAt[i] + 0.05, fmt0, "power2.out");
+        tl.fromTo("#s1-money", { y: 0 }, { y: 10, duration: 0.06, yoyo: true, repeat: 1, ease: "none", immediateRender: false }, nAt[i] + 0.05);
+      });
+      tl.to("#s1-num", { color: "#ff7a6b", duration: 0.4 }, 1.6);
+      // exit: everything slams down
+      tl.to("#s1 .content", { y: 40, opacity: 0, duration: 0.22, ease: "power2.in" }, 3.38);
+
+      // ============ S2 · WHERE DID IT GO (3.6 – 7.0) ============
+      const S2 = 3.6;
+      tl.fromTo("#s2-glow", { scale: 0.85, opacity: 0.6 }, { scale: 1.1, opacity: 1, duration: 3.4, ease: "sine.inOut" }, S2);
+      gsap.utils.toArray("#s2-chaos .chip").forEach((c, i) => {
+        tl.fromTo(c, { opacity: 0, scale: 1.6, filter: "blur(8px)" }, { opacity: 0.85, scale: 1, filter: "blur(0px)", duration: 0.22, ease: "power3.out" }, S2 + 0.05 + i * 0.12);
+        tl.to(c, { opacity: 0.32, duration: 0.6, ease: "power1.out" }, S2 + 1.5 + i * 0.03);
+      });
+      tl.fromTo("#s2-top", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, S2 + 0.05);
+      tl.fromTo("#s2-money", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, S2);
+      count($("#s2-num"), 3348.7, 312, 1.25, S2 + 0.1, fmt0, "power3.inOut");
+      shake($("#s2-money"), S2 + 1.35, 12, 6);
+      tl.fromTo("#s2-q1", { opacity: 0, y: 70, rotation: -4 }, { opacity: 1, y: 0, rotation: 0, duration: 0.35, ease: "back.out(2)" }, S2 + 1.4);
+      tl.fromTo("#s2-q2", { opacity: 0, scale: 1.8, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.32, ease: "power4.out" }, S2 + 1.75);
+      tl.to("#s2-q2", { color: "#ff7a6b", duration: 0.2 }, S2 + 2.05);
+      tl.to("#s2 .content", { scale: 0.9, opacity: 0, duration: 0.25, ease: "power2.in" }, S2 + 3.15);
+      tl.to("#s2-chaos", { opacity: 0, duration: 0.25 }, S2 + 3.15);
+
+      // ============ S3 · MANUAL ENTRY (7.0 – 10.0) ============
+      const S3 = 7.0;
+      tl.fromTo("#s3-h1", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, S3 + 0.05);
+      tl.fromTo("#s3-h2", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, S3 + 0.4);
+      tl.fromTo("#s3-h3", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, S3 + 0.65);
+      tl.fromTo("#s3-form", { opacity: 0, y: 120, rotation: 3 }, { opacity: 1, y: 0, rotation: 0, duration: 0.5, ease: "back.out(1.4)" }, S3 + 0.3);
+      // typing
+      const typed = ["RM 1", "RM 18", "RM 18.", "RM 18.5", "RM 18.50", "RM 18.5", "RM 18.", "RM 18"];
+      typed.forEach((txt, i) => {
+        tl.set("#s3-type", { textContent: txt }, S3 + 0.8 + i * 0.15);
+      });
+      tl.fromTo("#s3-caret", { opacity: 1 }, { opacity: 0, duration: 0.2, repeat: 7, yoyo: true, ease: "steps(1)" }, S3 + 0.4);
+      tl.to("#s3-form", { opacity: 0.35, filter: "blur(3px)", duration: 0.3 }, S3 + 1.55);
+      tl.fromTo("#s3-stamp", { opacity: 0, scale: 2.4, rotation: -14 }, { opacity: 1, scale: 1, rotation: -6, duration: 0.25, ease: "power4.in" }, S3 + 1.3);
+      shake($("#s3-content"), S3 + 1.56, 8, 5);
+      // suck-in exit before reveal
+      tl.to("#s3-content", { scale: 0.7, opacity: 0, duration: 0.4, ease: "power3.in" }, S3 + 2.55);
+      tl.to("#s3-stamp", { scale: 0.5, opacity: 0, duration: 0.4, ease: "power3.in" }, S3 + 2.55);
+
+      // ============ S4 · MEET BAKI (10.0 – 12.5) ============
+      const S4 = 10.0;
+      tl.fromTo("#s4-reveal", { clipPath: "circle(0% at 50% 37%)" }, { clipPath: "circle(110% at 50% 37%)", duration: 0.55, ease: "expo.out" }, S4);
+      tl.fromTo("#s4-grid", { y: 0 }, { y: -90, duration: 2.5, ease: "none" }, S4);
+      tl.fromTo("#s4-logo", { scale: 2.6, rotation: -20, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: "back.out(1.8)" }, S4 + 0.02);
+      tl.fromTo("#s4-burst i", { scaleY: 0, opacity: 1 }, { scaleY: 1, duration: 0.3, ease: "power3.out" }, S4 + 0.3);
+      tl.to("#s4-burst i", { opacity: 0, duration: 0.35, ease: "power1.in" }, S4 + 0.6);
+      tl.fromTo("#s4-burst", { scale: 0.8 }, { scale: 1.25, duration: 0.65, ease: "power2.out" }, S4 + 0.3);
+      tl.fromTo("#s4-title", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.4, ease: "power4.out" }, S4 + 0.5);
+      tl.fromTo("#s4-sub", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, S4 + 0.85);
+      tl.fromTo("#s4-hl", { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power2.inOut" }, S4 + 1.15);
+      tl.fromTo("#s4-logo", { y: 0 }, { y: -10, duration: 0.8, yoyo: true, repeat: 1, ease: "sine.inOut", immediateRender: false }, S4 + 0.6);
+      tl.to("#s4-reveal .s4-center", { x: -140, opacity: 0, duration: 0.22, ease: "power2.in" }, S4 + 2.28);
+
+      // ============ FEATURE SCENE HELPER ============
+      const FEAT = {
+        5: { grid: "#s5-grid", tag: "#s5-tag", h1: "#s5-h1", h2: "#s5-h2", content: "#s5 .content" },
+        6: { grid: "#s6-grid", tag: "#s6-tag", h1: "#s6-h1", h2: "#s6-h2", content: "#s6 .content" },
+        7: { grid: "#s7-grid", tag: "#s7-tag", h1: "#s7-h1", h2: "#s7-h2", content: "#s7 .content" },
+        8: { grid: "#s8-grid", tag: "#s8-tag", h1: "#s8-h1", h2: "#s8-h2", content: "#s8 .content" },
+      };
+      function featureIn(n, at) {
+        const f = FEAT[n];
+        tl.fromTo(f.grid, { x: 0 }, { x: -90, duration: 4, ease: "none" }, at);
+        tl.fromTo(f.tag, { opacity: 0, x: 100 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, at);
+        tl.fromTo(f.h1, { opacity: 0, x: 140 }, { opacity: 1, x: 0, duration: 0.4, ease: "power4.out" }, at + 0.06);
+        tl.fromTo(f.h2, { opacity: 0, x: 140 }, { opacity: 1, x: 0, duration: 0.4, ease: "power4.out" }, at + 0.16);
+      }
+      function featureOut(n, end) {
+        tl.to(FEAT[n].content, { x: -140, opacity: 0, duration: 0.22, ease: "power2.in" }, end - 0.24);
+      }
+
+      // ============ S5 · AUTO-CAPTURE (12.5 – 16.5) ============
+      const S5 = 12.5;
+      featureIn(5, S5);
+      tl.fromTo("#s5-mini", { opacity: 0 }, { opacity: 1, duration: 0.3 }, S5 + 0.1);
+      tl.fromTo("#s5-notif", { y: -220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.5)" }, S5 + 0.5);
+      // notification morphs into review card
+      tl.to("#s5-notif", { scaleX: 0.8, scaleY: 2.4, opacity: 0, duration: 0.3, ease: "power3.in" }, S5 + 1.2);
+      tl.fromTo("#s5-review", { opacity: 0, scale: 0.6, y: -60 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "back.out(1.5)" }, S5 + 1.3);
+      tl.fromTo("#s5-review .rv-chip", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.25, stagger: 0.1, ease: "power2.out" }, S5 + 1.65);
+      // cursor taps Save
+      tl.fromTo("#s5-cursor", { opacity: 0, x: 220, y: 220 }, { opacity: 1, x: 0, y: 0, duration: 0.5, ease: "power3.out" }, S5 + 1.85);
+      tl.to("#s5-cursor", { scale: 0.8, duration: 0.08, yoyo: true, repeat: 1 }, S5 + 2.38);
+      tl.to("#s5-save", { x: 4, y: 4, boxShadow: "2px 2px 0 #15171A", duration: 0.08, yoyo: true, repeat: 1 }, S5 + 2.38);
+      tl.fromTo("#s5-ripple", { scale: 0.5, opacity: 1 }, { scale: 2.6, opacity: 0, duration: 0.45, ease: "power2.out" }, S5 + 2.4);
+      tl.to("#s5-cursor", { opacity: 0, duration: 0.2 }, S5 + 2.6);
+      // card flies down into Activity row
+      tl.to("#s5-review", { scale: 0.3, y: 420, opacity: 0, duration: 0.35, ease: "power3.in" }, S5 + 2.6);
+      tl.fromTo("#s5-row", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: -330, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, S5 + 2.85);
+      tl.fromTo("#s5-pill", { scale: 0 }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, S5 + 3.05);
+      tl.fromTo("#s5-banks .lbl", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, S5 + 3.15);
+      tl.fromTo("#s5-banks .bank", { opacity: 0, y: 24, scale: 0.8 }, { opacity: 1, y: 0, scale: 1, duration: 0.25, stagger: 0.08, ease: "back.out(2.2)" }, S5 + 3.25);
+      featureOut(5, S5 + 4);
+
+      // ============ S6 · LEFT TO SPEND (16.5 – 20.0) ============
+      const S6 = 16.5;
+      featureIn(6, S6);
+      tl.fromTo("#s6-card", { opacity: 0, y: 140 }, { opacity: 1, y: 0, duration: 0.45, ease: "back.out(1.4)" }, S6 + 0.3);
+      tl.fromTo("#s6-c1", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2.5)" }, S6 + 0.8);
+      tl.fromTo("#s6-c2", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2.5)" }, S6 + 1.3);
+      tl.fromTo("#s6-c3", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2.5)" }, S6 + 1.8);
+      count($("#s6-num"), 4200, 2650, 0.4, S6 + 1.3, fmt2, "power2.out");
+      count($("#s6-num"), 2650, 1284.6, 0.45, S6 + 1.8, fmt2, "power2.out");
+      tl.fromTo("#s6-bar", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, S6 + 2.1);
+      tl.fromTo("#s6-note", { opacity: 0 }, { opacity: 1, duration: 0.3 }, S6 + 2.2);
+      tl.fromTo("#s6-today", { opacity: 0, scale: 0.5, rotation: -8 }, { opacity: 1, scale: 1, rotation: -3, duration: 0.35, ease: "back.out(2.2)" }, S6 + 2.5);
+      featureOut(6, S6 + 3.5);
+
+      // ============ S7 · COMMITMENTS (20.0 – 23.5) ============
+      const S7 = 20.0;
+      featureIn(7, S7);
+      tl.fromTo("#s7-card", { opacity: 0, y: 140 }, { opacity: 1, y: 0, duration: 0.45, ease: "back.out(1.4)" }, S7 + 0.3);
+      tl.fromTo("#s7-pill", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, S7 + 0.6);
+      gsap.utils.toArray("#s7-card .crow").forEach((row, i) => {
+        const at = S7 + 1.0 + i * 0.5;
+        const len = 22;
+        tl.fromTo(row.querySelector(".fill"), { scale: 0 }, { scale: 1, duration: 0.18, ease: "back.out(2)" }, at);
+        tl.fromTo(row.querySelector(".ck"), { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.22, ease: "power2.out" }, at + 0.06);
+        tl.fromTo(row.querySelector(".paid-tag"), { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.2, ease: "power2.out" }, at + 0.08);
+        tl.to(row.querySelector(".amt"), { color: "#8a8e97", duration: 0.2 }, at + 0.08);
+        tl.fromTo(row, { x: 0 }, { x: 10, duration: 0.07, yoyo: true, repeat: 1, ease: "power1.out" }, at);
+        tl.set("#s7-count", { textContent: String(i + 1) }, at);
+      });
+      tl.to("#s7-pill", { backgroundColor: "#1f7a4d", duration: 0.25 }, S7 + 2.55);
+      featureOut(7, S7 + 3.5);
+
+      // ============ S8 · PRIVATE (23.5 – 26.0) ============
+      const S8 = 23.5;
+      featureIn(8, S8);
+      tl.fromTo("#s8-lock", { opacity: 0, scale: 0.4, rotation: -15 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "back.out(2)" }, S8 + 0.3);
+      tl.fromTo("#s8-shackle", { y: -4 }, { y: 0, duration: 0.18, ease: "power4.in" }, S8 + 0.6);
+      tl.fromTo("#s8-lock", { y: 0 }, { y: 8, duration: 0.07, yoyo: true, repeat: 1, immediateRender: false }, S8 + 0.78);
+      ["#f1", "#f2", "#f3"].forEach((f, i) => {
+        tl.fromTo(f, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, S8 + 0.7 + i * 0.2);
+      });
+      tl.to("#s8 .content", { scale: 1.08, opacity: 0, duration: 0.22, ease: "power2.in" }, S8 + 2.26);
+
+      // ============ S9 · CTA (26.0 – 30.0) ============
+      const S9 = 26.0;
+      tl.fromTo("#s9-grid", { y: 0 }, { y: 90, duration: 4, ease: "none" }, S9);
+      tl.fromTo("#s9-logo", { opacity: 0, scale: 0.3, rotation: 25 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: "back.out(1.8)" }, S9);
+      tl.fromTo("#s9-title", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.45, ease: "power4.out" }, S9 + 0.3);
+      tl.fromTo("#s9-tag", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, S9 + 0.6);
+      tl.fromTo("#s9-cta", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, S9 + 1.3);
+      tl.to("#s9-cta", { scale: 1.05, duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, S9 + 1.8);
+      tl.fromTo("#s9-foot", { opacity: 0 }, { opacity: 1, duration: 0.5 }, S9 + 1.6);
+      tl.fromTo("#s9-logo", { y: 0 }, { y: -10, duration: 1, yoyo: true, repeat: 2, ease: "sine.inOut", immediateRender: false }, S9 + 0.6);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
