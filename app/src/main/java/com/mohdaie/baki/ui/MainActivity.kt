@@ -198,6 +198,11 @@ fun BakiRoot(vm: AppViewModel = viewModel()) {
                 accounts = accounts,
                 primaryLabel = "Save",
                 secondaryLabel = "Delete",
+                unpaidCommitments = unpaidCommitments(commitments, payments),
+                onLinkCommitment = if (tx.type == TxType.INCOME) null else { c ->
+                    vm.linkTransactionToCommitment(tx.id, c)
+                    editTx = null
+                },
                 onPrimary = {
                     vm.saveTransaction(tx.id, it, tx.timestamp)
                     editTx = null

@@ -113,6 +113,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.ignorePending(pendingId)
     }
 
+    /** "This saved payment is my Car loan" — tick the commitment and drop the expense so it isn't counted twice. */
+    fun linkTransactionToCommitment(txId: Long, c: CommitmentEntity) = io {
+        repo.setPaid(c.id, true)
+        repo.deleteTransaction(txId)
+    }
+
     fun setSourceAccount(pkg: String, name: String) = io { repo.setSourceAccount(pkg, name) }
     fun setSourceIgnored(pkg: String, ignored: Boolean) = io { repo.setSourceIgnored(pkg, ignored) }
 
