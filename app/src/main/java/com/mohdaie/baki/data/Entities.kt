@@ -18,6 +18,8 @@ data class TransactionEntity(
     /** "manual" or "notif:<package name>" */
     val source: String = "manual",
     val rawText: String? = null,
+    /** Set when this payment is one of the monthly commitments; it then isn't counted as spending again. */
+    val commitmentId: Long? = null,
 )
 
 /** A captured notification waiting for you to confirm it in the popup. */

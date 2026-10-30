@@ -63,7 +63,8 @@ fun summarize(
     val overdue = dueSorted.filter { dueDateIn(it, period) < today }
     val nextDue = dueSorted.firstOrNull { dueDateIn(it, period) >= today }
 
-    val expenses = monthTx.filter { it.type == TxType.EXPENSE }
+    // A payment linked to a paid commitment is already in paidTotal.
+    val expenses = monthTx.filter { it.type == TxType.EXPENSE && it.commitmentId !in paidIds }
     val spent = expenses.sumOf { it.amount }
     // Income ticked as "net salary" is already the salary figure, so it isn't added again.
     val income = monthTx.filter { it.type == TxType.INCOME && it.category != SALARY_TAG }.sumOf { it.amount }

@@ -194,6 +194,18 @@ class Repository(private val context: Context, db: AppDatabase) {
         }
     }
 
+    /** Keep the payment in Activity but tie it to a commitment: ticks it paid and stops it counting as spending twice. */
+    suspend fun linkTransaction(txId: Long, commitmentId: Long) {
+        val tx = dao.getTransaction(txId) ?: return
+        dao.updateTransaction(tx.copy(commitmentId = commitmentId))
+        setPaid(commitmentId, true)
+    }
+
+    suspend fun unlinkTransaction(txId: Long) {
+        val tx = dao.getTransaction(txId) ?: return
+        dao.updateTransaction(tx.copy(commitmentId = null))
+    }
+
     suspend fun setBudget(category: String, mode: String, value: Double) =
         dao.upsertBudget(BudgetEntity(category, mode, value))
 

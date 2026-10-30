@@ -44,6 +44,7 @@ fun PlanScreen(vm: AppViewModel) {
     val commitments by vm.commitments.collectAsStateWithLifecycle()
     val budgets by vm.budgets.collectAsStateWithLifecycle()
     val txs by vm.monthTx.collectAsStateWithLifecycle()
+    val payments by vm.payments.collectAsStateWithLifecycle()
 
     var salaryText by rememberSyncedText(
         settings?.get(Repository.SALARY)?.toDoubleOrNull()?.takeIf { it > 0 }?.let { Fmt.plain(it) },
@@ -55,7 +56,8 @@ fun PlanScreen(vm: AppViewModel) {
     val budgetMap = budgets.orEmpty()
     val totalAllocated = Category.entries.sumOf { allocationFor(budgetMap[it.id], available) }
     val unallocated = available - totalAllocated
-    val spentByCat = txs.filter { it.type == TxType.EXPENSE }.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.amount } }
+    val paidIds = payments.map { it.commitmentId }.toSet()
+    val spentByCat = txs.filter { it.type == TxType.EXPENSE && it.commitmentId !in paidIds }.groupBy { it.category }.mapValues { (_, l) -> l.sumOf { it.amount } }
 
     LazyColumn(
         Modifier.fillMaxSize(),

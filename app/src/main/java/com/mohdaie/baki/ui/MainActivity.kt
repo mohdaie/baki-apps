@@ -199,6 +199,8 @@ fun BakiRoot(vm: AppViewModel = viewModel()) {
                 primaryLabel = "Save",
                 secondaryLabel = "Delete",
                 unpaidCommitments = unpaidCommitments(commitments, payments),
+                linkedName = tx.commitmentId?.let { id -> commitments.firstOrNull { it.id == id }?.name ?: "a commitment" },
+                onUnlink = { vm.unlinkTransaction(tx.id); editTx = null },
                 onLinkCommitment = if (tx.type == TxType.INCOME) null else { c ->
                     vm.linkTransactionToCommitment(tx.id, c)
                     editTx = null
