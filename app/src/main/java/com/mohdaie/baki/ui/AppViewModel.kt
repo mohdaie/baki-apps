@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -52,10 +53,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val activityTx: StateFlow<List<TransactionEntity>> =
         _activityMonth.flatMapLatest { repo.observeMonth(it) }.stateIn(viewModelScope, started, emptyList())
 
-    /** The last 4 months including this one, for Statistics. */
+    /** Start of each of the last 4 salary periods (oldest first); the last one is the current period. */
+    val periodStarts: StateFlow<List<Long>> =
+        repo.observePeriodStarts().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Everything from the oldest of those periods until now, for Statistics. */
     val historyTx: StateFlow<List<TransactionEntity>> =
-        repo.observeRange(currentMonth.minusMonths(3), currentMonth.plusMonths(1))
-            .stateIn(viewModelScope, started, emptyList())
+        periodStarts.flatMapLatest { starts ->
+            if (starts.isEmpty()) flowOf(emptyList()) else repo.observeSince(starts.first())
+        }.stateIn(viewModelScope, started, emptyList())
 
     val commitments: StateFlow<List<CommitmentEntity>> =
         repo.dao.observeCommitments().stateIn(viewModelScope, started, emptyList())

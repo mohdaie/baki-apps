@@ -25,27 +25,37 @@ import com.mohdaie.baki.ui.theme.*
 import com.mohdaie.baki.util.Fmt
 import com.mohdaie.baki.util.toLocalDate
 import java.time.LocalDate
-import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
 fun StatsScreen(vm: AppViewModel) {
     val history by vm.historyTx.collectAsStateWithLifecycle()
-    val month = vm.currentMonth
+    val period by vm.period.collectAsStateWithLifecycle()
+    val starts by vm.periodStarts.collectAsStateWithLifecycle()
     val today = LocalDate.now()
+    // Each salary starts a new period; the last one is the current period, to date.
+    val startLabel = "${period.startDate.dayOfMonth} ${period.startDate.format(Fmt.monShort)}"
 
     val expenses = history.filter { it.type == TxType.EXPENSE }
-    val months = (3 downTo 0).map { month.minusMonths(it.toLong()) }
-    val monthTotals = months.map { m -> expenses.filter { YearMonth.from(it.timestamp.toLocalDate()) == m }.sumOf { it.amount } }
-    val current = expenses.filter { YearMonth.from(it.timestamp.toLocalDate()) == month }
-    val spent = monthTotals.last()
-    val lastMonth = monthTotals[2]
-    val daysSoFar = if (YearMonth.from(today) == month) today.dayOfMonth else month.lengthOfMonth()
-    val avgPerDay = spent / max(1, daysSoFar)
-    val projected = avgPerDay * month.lengthOfMonth()
+    val periodTotals = starts.mapIndexed { i, from ->
+        val to = starts.getOrNull(i + 1) ?: Long.MAX_VALUE
+        expenses.filter { it.timestamp in from until to }.sumOf { it.amount }
+    }
+    val periodLabels = starts.map { val d = it.toLocalDate(); "${d.dayOfMonth} ${d.format(Fmt.monShort)}" }
+    val current = expenses.filter { it.timestamp >= period.startMillis }
+    val spent = periodTotals.lastOrNull() ?: 0.0
+    val lastPeriod = if (periodTotals.size >= 2) periodTotals[periodTotals.size - 2] else 0.0
+    val daysSoFar = max(1, (ChronoUnit.DAYS.between(period.startDate, today) + 1).toInt())
+    val totalDays = max(daysSoFar, ChronoUnit.DAYS.between(period.startDate, period.endDate).toInt())
+    val avgPerDay = spent / daysSoFar
+    val projected = avgPerDay * totalDays
 
-    val byDay = (1..month.lengthOfMonth()).map { d -> current.filter { it.timestamp.toLocalDate().dayOfMonth == d }.sumOf { it.amount } }
+    val byDay = (0 until totalDays).map { d ->
+        val date = period.startDate.plusDays(d.toLong())
+        current.filter { it.timestamp.toLocalDate() == date }.sumOf { it.amount }
+    }
     val peakDay = byDay.indices.maxByOrNull { byDay[it] }
 
     val byCategory = current.groupBy { Category.of(it.category) }
@@ -67,18 +77,18 @@ fun StatsScreen(vm: AppViewModel) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Kpi("Spent in ${month.format(Fmt.monShort)}", "RM ${Fmt.money(spent)}", "Month to date", Muted, Modifier.weight(1f))
+                    Kpi("Spent since $startLabel", "RM ${Fmt.money(spent)}", "Since your last salary", Muted, Modifier.weight(1f))
                     Kpi("Daily average", "RM ${Fmt.money(avgPerDay)}", "Over $daysSoFar days", Muted, Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val vsText: String
                     val vsColor: Color
-                    if (lastMonth > 0) {
-                        val pct = ((projected - lastMonth) / lastMonth * 100).roundToInt()
-                        vsText = (if (pct <= 0) "↓ " else "↑ ") + "${kotlin.math.abs(pct)}% vs last month"
+                    if (lastPeriod > 0) {
+                        val pct = ((projected - lastPeriod) / lastPeriod * 100).roundToInt()
+                        vsText = (if (pct <= 0) "↓ " else "↑ ") + "${kotlin.math.abs(pct)}% vs last salary"
                         vsColor = if (pct <= 0) Green else Red
                     } else {
-                        vsText = "No data for last month"
+                        vsText = "No data for last salary"
                         vsColor = Muted
                     }
                     Kpi("Projected", "RM ${Fmt.money0(projected)}", vsText, vsColor, Modifier.weight(1f))
@@ -96,17 +106,16 @@ fun StatsScreen(vm: AppViewModel) {
 
         item {
             BrutalCard {
-                SectionTitle("Monthly spending")
-                Text("Last 4 months · this month is to date", color = Muted, fontSize = 12.5.sp)
+                SectionTitle("Spending per salary")
+                Text("Last 4 salaries · latest is to date", color = Muted, fontSize = 12.5.sp)
                 Spacer(Modifier.height(12.dp))
-                val maxTotal = monthTotals.maxOrNull()?.takeIf { it > 0 } ?: 1.0
+                val maxTotal = periodTotals.maxOrNull()?.takeIf { it > 0 } ?: 1.0
                 Row(
                     Modifier.fillMaxWidth().height(170.dp).padding(horizontal = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.Bottom,
                 ) {
-                    months.forEachIndexed { i, m ->
-                        val v = monthTotals[i]
+                    periodTotals.forEachIndexed { i, v ->
                         val h = max(4.0, v / maxTotal * 112).dp
                         val shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
                         Column(
@@ -121,11 +130,11 @@ fun StatsScreen(vm: AppViewModel) {
                                     .fillMaxWidth(0.85f)
                                     .height(h)
                                     .clip(shape)
-                                    .background(if (i == months.lastIndex) Accent else Color(0xFFC9C7BE))
+                                    .background(if (i == periodTotals.lastIndex) Accent else Color(0xFFC9C7BE))
                                     .border(2.dp, Ink, shape),
                             )
                             Spacer(Modifier.height(6.dp))
-                            Text(m.format(Fmt.monShort), color = Ink, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                            Text(periodLabels[i], color = Ink, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -134,10 +143,10 @@ fun StatsScreen(vm: AppViewModel) {
 
         item {
             BrutalCard {
-                SectionTitle("Daily spending · ${month.format(Fmt.monShort)}")
+                SectionTitle("Daily spending · since $startLabel")
                 Text(
                     if (peakDay != null && byDay[peakDay] > 0) {
-                        "Highest day: ${peakDay + 1} ${month.format(Fmt.monShort)} · RM ${Fmt.money(byDay[peakDay])}"
+                        "Highest day: ${period.startDate.plusDays(peakDay.toLong()).let { "${it.dayOfMonth} ${it.format(Fmt.monShort)}" }} · RM ${Fmt.money(byDay[peakDay])}"
                     } else {
                         "No spending yet"
                     },
@@ -152,8 +161,8 @@ fun StatsScreen(vm: AppViewModel) {
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     byDay.forEachIndexed { i, v ->
-                        val day = i + 1
-                        val future = YearMonth.from(today) == month && day > today.dayOfMonth
+                        val date = period.startDate.plusDays(i.toLong())
+                        val future = date.isAfter(today)
                         val h = when {
                             future -> 3.0
                             v > 0 -> max(4.0, v / maxDay * 96)
@@ -167,7 +176,7 @@ fun StatsScreen(vm: AppViewModel) {
                                 .background(
                                     when {
                                         future -> Hairline
-                                        day == today.dayOfMonth && YearMonth.from(today) == month -> Accent
+                                        date == today -> Accent
                                         else -> Ink
                                     },
                                 ),
@@ -177,11 +186,10 @@ fun StatsScreen(vm: AppViewModel) {
                 Spacer(Modifier.height(4.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     byDay.indices.forEach { i ->
-                        val day = i + 1
                         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                            if (day == 1 || day % 7 == 1) {
+                            if (i % 7 == 0) {
                                 Text(
-                                    "$day",
+                                    "${period.startDate.plusDays(i.toLong()).dayOfMonth}",
                                     color = Muted,
                                     fontSize = 10.5.sp,
                                     softWrap = false,
@@ -199,7 +207,7 @@ fun StatsScreen(vm: AppViewModel) {
                 SectionTitle("Where it went")
                 Spacer(Modifier.height(12.dp))
                 if (byCategory.isEmpty()) {
-                    Text("No spending yet this month.", color = Muted, fontSize = 13.sp)
+                    Text("No spending yet since your last salary.", color = Muted, fontSize = 13.sp)
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     val top = byCategory.firstOrNull()?.amount ?: 1.0
@@ -235,7 +243,7 @@ fun StatsScreen(vm: AppViewModel) {
                 SectionTitle("Top merchants", Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
                 HairlineDivider()
                 if (merchants.isEmpty()) {
-                    Text("No spending yet this month.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
+                    Text("No spending yet since your last salary.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
                 }
                 merchants.forEachIndexed { i, (name, count, amount) ->
                     Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {

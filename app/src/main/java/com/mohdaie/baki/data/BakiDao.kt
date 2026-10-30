@@ -17,6 +17,9 @@ interface BakiDao {
     @Query("SELECT MAX(timestamp) FROM transactions WHERE type = 'income' AND category = 'salary'")
     fun observeLatestSalaryTime(): Flow<Long?>
 
+    @Query("SELECT timestamp FROM transactions WHERE type = 'income' AND category = 'salary' ORDER BY timestamp DESC LIMIT 4")
+    fun observeRecentSalaryTimes(): Flow<List<Long>>
+
     @Query("SELECT MAX(timestamp) FROM transactions WHERE type = 'income' AND category = 'salary'")
     suspend fun latestSalaryTime(): Long?
 

@@ -32,6 +32,16 @@ class Repository(private val context: Context, db: AppDatabase) {
 
     suspend fun currentPeriod(): Period = Period.of(dao.latestSalaryTime())
 
+    /** Starts of the last 4 budget periods, oldest first: one per salary, or calendar months until there is a salary. */
+    fun observePeriodStarts(): Flow<List<Long>> = dao.observeRecentSalaryTimes().map { times ->
+        if (times.isEmpty()) {
+            val month = YearMonth.now()
+            (3 downTo 0).map { month.minusMonths(it.toLong()).startMillis() }
+        } else {
+            times.sorted()
+        }
+    }
+
     fun observeSince(startMillis: Long): Flow<List<TransactionEntity>> =
         dao.observeTransactions(startMillis, Long.MAX_VALUE)
 
