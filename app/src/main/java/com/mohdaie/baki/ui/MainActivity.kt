@@ -120,11 +120,12 @@ fun BakiRoot(vm: AppViewModel = viewModel()) {
 
     BackHandler(enabled = showSettings) { showSettings = false }
 
-    val monthLabel = vm.currentMonth.format(Fmt.monthYear)
+    val period by vm.period.collectAsStateWithLifecycle()
+    val monthLabel = if (period.fromSalary) "Since ${period.startDate.dayOfMonth} ${period.startDate.format(Fmt.monShort)}" else vm.currentMonth.format(Fmt.monthYear)
     val subtitle = when (tab) {
         BakiTab.HOME -> monthLabel
         BakiTab.ACTIVITY -> "Auto-captured from notifications"
-        BakiTab.COMMITMENTS -> "$monthLabel · monthly"
+        BakiTab.COMMITMENTS -> "$monthLabel · repeats each salary"
         BakiTab.PLAN -> "$monthLabel budget"
         BakiTab.STATS -> "Your money, over time"
     }

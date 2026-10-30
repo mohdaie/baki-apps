@@ -35,6 +35,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val settings by vm.settings.collectAsStateWithLifecycle()
+    val period by vm.period.collectAsStateWithLifecycle()
     val txs by vm.monthTx.collectAsStateWithLifecycle()
     val commitments by vm.commitments.collectAsStateWithLifecycle()
     val payments by vm.payments.collectAsStateWithLifecycle()
@@ -45,7 +46,7 @@ fun HomeScreen(
     val listenerOn = remember(resumeTick) { Permissions.listenerEnabled(context) }
 
     val salary = settings?.get(Repository.SALARY)?.toDoubleOrNull() ?: 0.0
-    val s = summarize(salary, commitments, payments, txs, budgets.orEmpty(), vm.currentMonth, LocalDate.now())
+    val s = summarize(salary, commitments, payments, txs, budgets.orEmpty(), period, LocalDate.now())
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -150,7 +151,7 @@ fun HomeScreen(
                 val recent = txs.take(4)
                 if (recent.isEmpty()) {
                     Text(
-                        "Nothing yet this month. Spending appears here as notifications come in.",
+                        "Nothing yet since your last salary. Spending appears here as notifications come in.",
                         color = Muted,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(16.dp),
@@ -166,7 +167,7 @@ fun HomeScreen(
 @Composable
 private fun LeftToSpendCard(salary: Double, income: Double, paid: Double, spent: Double, left: Double) {
     BrutalCard(background = AccentSoft, radius = 22.dp, contentPadding = PaddingValues(18.dp)) {
-        CapsLabel("Left to spend this month", color = Deep)
+        CapsLabel("Left to spend", color = Deep)
         Spacer(Modifier.height(8.dp))
         val parts = Fmt.money(kotlin.math.abs(left)).split(".")
         Row(verticalAlignment = Alignment.Bottom) {
@@ -183,15 +184,15 @@ private fun LeftToSpendCard(salary: Double, income: Double, paid: Double, spent:
         }
         val base = salary + income
         val pct = if (base > 0) kotlin.math.max(0, (left / base * 100).toInt()) else 0
-        Text("$pct% of this month's money still free", color = Deep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text("$pct% of your salary still free", color = Deep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(10.dp))
         DashedRule()
         Spacer(Modifier.height(10.dp))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             KeyValueRow("Net salary", "RM ${Fmt.money(salary)}")
-            KeyValueRow("Income this month", "+ ${Fmt.money(income)}")
+            KeyValueRow("Other income", "+ ${Fmt.money(income)}")
             KeyValueRow("Paid commitments", "− ${Fmt.money(paid)}")
-            KeyValueRow("Spent this month", "− ${Fmt.money(spent)}")
+            KeyValueRow("Spent", "− ${Fmt.money(spent)}")
         }
     }
 }

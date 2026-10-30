@@ -5,6 +5,7 @@ import com.mohdaie.baki.data.BudgetEntity
 import com.mohdaie.baki.data.CommitmentEntity
 import com.mohdaie.baki.data.CommitmentPaymentEntity
 import com.mohdaie.baki.data.PendingEntity
+import com.mohdaie.baki.data.Period
 import com.mohdaie.baki.data.TransactionEntity
 import com.mohdaie.baki.model.BudgetMode
 import com.mohdaie.baki.model.Category
@@ -13,6 +14,7 @@ import com.mohdaie.baki.model.TxType
 import com.mohdaie.baki.ui.theme.*
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -25,9 +27,9 @@ data class MonthSummary(
     val overdue: List<CommitmentEntity>,
     val nextDue: CommitmentEntity?,
     val spent: Double,
-    /** Income recorded in Activity this month (refunds, transfers in, side income...). */
+    /** Income recorded in Activity since the latest salary (refunds, transfers in, side income...). */
     val income: Double,
-    /** Net salary + income − paid commitments − this month's spending. */
+    /** Net salary + income − paid commitments − spending since salary. */
     val left: Double,
     val daysLeft: Int,
     val dailyAvailable: Double,
@@ -50,23 +52,23 @@ fun summarize(
     payments: List<CommitmentPaymentEntity>,
     monthTx: List<TransactionEntity>,
     budgets: Map<String, BudgetEntity>,
-    month: YearMonth,
+    period: Period,
     today: LocalDate,
 ): MonthSummary {
     val paidIds = payments.map { it.commitmentId }.toSet()
     val commitTotal = commitments.sumOf { it.amount }
     val paidTotal = commitments.filter { it.id in paidIds }.sumOf { it.amount }
-    val unpaid = commitments.filter { it.id !in paidIds }.sortedBy { it.dueDay }
-    val isCurrent = YearMonth.from(today) == month
-    val overdue = if (isCurrent) unpaid.filter { dueDayIn(it, month) < today.dayOfMonth } else emptyList()
-    val nextDue = if (isCurrent) unpaid.firstOrNull { dueDayIn(it, month) >= today.dayOfMonth } else unpaid.firstOrNull()
+    val unpaid = commitments.filter { it.id !in paidIds }
+    val dueSorted = unpaid.sortedBy { dueDateIn(it, period) }
+    val overdue = dueSorted.filter { dueDateIn(it, period) < today }
+    val nextDue = dueSorted.firstOrNull { dueDateIn(it, period) >= today }
 
     val expenses = monthTx.filter { it.type == TxType.EXPENSE }
     val spent = expenses.sumOf { it.amount }
     // Income ticked as "net salary" is already the salary figure, so it isn't added again.
     val income = monthTx.filter { it.type == TxType.INCOME && it.category != SALARY_TAG }.sumOf { it.amount }
     val left = salary + income - paidTotal - spent
-    val daysLeft = if (isCurrent) month.lengthOfMonth() - today.dayOfMonth + 1 else month.lengthOfMonth()
+    val daysLeft = max(1L, ChronoUnit.DAYS.between(today, period.endDate)).toInt()
     val available = salary - commitTotal
     val spentByCategory = expenses
         .groupBy { Category.of(it.category)?.id }
@@ -94,12 +96,20 @@ fun summarize(
 
 fun dueDayIn(c: CommitmentEntity, month: YearMonth): Int = min(c.dueDay, month.lengthOfMonth())
 
+/** The first due date on or after the period start (a salary on the 25th makes a day-5 bill fall next month). */
+fun dueDateIn(c: CommitmentEntity, period: Period): LocalDate {
+    val startMonth = YearMonth.from(period.startDate)
+    val date = startMonth.atDay(dueDayIn(c, startMonth))
+    if (date >= period.startDate) return date
+    val next = startMonth.plusMonths(1)
+    return next.atDay(dueDayIn(c, next))
+}
+
 data class DueStatus(val text: String, val background: Color, val foreground: Color)
 
-fun dueStatus(c: CommitmentEntity, paid: Boolean, month: YearMonth, today: LocalDate): DueStatus {
+fun dueStatus(c: CommitmentEntity, paid: Boolean, period: Period, today: LocalDate): DueStatus {
     if (paid) return DueStatus("Paid", AccentSoft, Green)
-    if (YearMonth.from(today) != month) return DueStatus("Unpaid", Track, Muted)
-    val diff = dueDayIn(c, month) - today.dayOfMonth
+    val diff = ChronoUnit.DAYS.between(today, dueDateIn(c, period)).toInt()
     return when {
         diff < 0 -> DueStatus("Overdue", RedSoft, RedText)
         diff == 0 -> DueStatus("Due today", Amber, AmberText)

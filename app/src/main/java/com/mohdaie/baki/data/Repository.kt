@@ -28,6 +28,13 @@ class Repository(private val context: Context, db: AppDatabase) {
     fun observeMonth(month: YearMonth): Flow<List<TransactionEntity>> =
         dao.observeTransactions(month.startMillis(), month.plusMonths(1).startMillis())
 
+    fun observePeriod(): Flow<Period> = dao.observeLatestSalaryTime().map { Period.of(it) }
+
+    suspend fun currentPeriod(): Period = Period.of(dao.latestSalaryTime())
+
+    fun observeSince(startMillis: Long): Flow<List<TransactionEntity>> =
+        dao.observeTransactions(startMillis, Long.MAX_VALUE)
+
     fun observeRange(from: YearMonth, toExclusive: YearMonth): Flow<List<TransactionEntity>> =
         dao.observeTransactions(from.startMillis(), toExclusive.startMillis())
 
@@ -178,11 +185,12 @@ class Repository(private val context: Context, db: AppDatabase) {
         dao.deleteCommitment(id)
     }
 
-    suspend fun setPaid(commitmentId: Long, month: YearMonth, paid: Boolean) {
+    suspend fun setPaid(commitmentId: Long, paid: Boolean) {
+        val key = currentPeriod().key
         if (paid) {
-            dao.insertPayment(CommitmentPaymentEntity(commitmentId, month.toString(), System.currentTimeMillis()))
+            dao.insertPayment(CommitmentPaymentEntity(commitmentId, key, System.currentTimeMillis()))
         } else {
-            dao.deletePayment(commitmentId, month.toString())
+            dao.deletePayment(commitmentId, key)
         }
     }
 

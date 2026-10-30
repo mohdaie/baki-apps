@@ -14,6 +14,12 @@ interface BakiDao {
     @Query("SELECT * FROM transactions WHERE timestamp >= :from AND timestamp < :to ORDER BY timestamp DESC")
     fun observeTransactions(from: Long, to: Long): Flow<List<TransactionEntity>>
 
+    @Query("SELECT MAX(timestamp) FROM transactions WHERE type = 'income' AND category = 'salary'")
+    fun observeLatestSalaryTime(): Flow<Long?>
+
+    @Query("SELECT MAX(timestamp) FROM transactions WHERE type = 'income' AND category = 'salary'")
+    suspend fun latestSalaryTime(): Long?
+
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransaction(id: Long): TransactionEntity?
 

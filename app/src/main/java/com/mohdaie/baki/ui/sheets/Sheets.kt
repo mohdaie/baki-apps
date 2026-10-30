@@ -463,7 +463,7 @@ private fun SalaryOption(selected: Boolean, onToggle: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("This is my net salary", color = Ink, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
             Text(
-                "Sets this month's net salary to this amount instead of adding it as extra income.",
+                "Sets your net salary and starts a fresh budget: commitments, spending and balances reset from this date.",
                 color = Muted,
                 fontSize = 12.5.sp,
             )
