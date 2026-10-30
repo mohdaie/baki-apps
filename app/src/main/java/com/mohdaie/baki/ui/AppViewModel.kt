@@ -9,6 +9,7 @@ import com.mohdaie.baki.data.BudgetEntity
 import com.mohdaie.baki.data.CommitmentEntity
 import com.mohdaie.baki.data.CommitmentPaymentEntity
 import com.mohdaie.baki.data.PendingEntity
+import com.mohdaie.baki.data.Period
 import com.mohdaie.baki.data.Repository
 import com.mohdaie.baki.data.TransactionEntity
 import com.mohdaie.baki.data.TxDraft
@@ -40,8 +41,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val settings: StateFlow<Map<String, String>?> =
         repo.observeSettings().stateIn(viewModelScope, started, null)
 
+    /** Resets whenever a new net salary is recorded. */
+    val period: StateFlow<Period> =
+        repo.observePeriod().stateIn(viewModelScope, SharingStarted.Eagerly, Period.of(null))
+
+    /** Transactions since the latest net salary came in. */
     val monthTx: StateFlow<List<TransactionEntity>> =
-        repo.observeMonth(currentMonth).stateIn(viewModelScope, started, emptyList())
+        period.flatMapLatest { repo.observeSince(it.startMillis) }.stateIn(viewModelScope, started, emptyList())
 
     val activityTx: StateFlow<List<TransactionEntity>> =
         _activityMonth.flatMapLatest { repo.observeMonth(it) }.stateIn(viewModelScope, started, emptyList())
@@ -55,7 +61,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.dao.observeCommitments().stateIn(viewModelScope, started, emptyList())
 
     val payments: StateFlow<List<CommitmentPaymentEntity>> =
-        repo.dao.observePayments(currentMonth.toString()).stateIn(viewModelScope, started, emptyList())
+        period.flatMapLatest { repo.dao.observePayments(it.key) }.stateIn(viewModelScope, started, emptyList())
 
     /** null until loaded. */
     val budgets: StateFlow<Map<String, BudgetEntity>?> =
@@ -91,7 +97,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setSgdRate(value: Double) = io { if (value > 0) repo.setSetting(Repository.SGD_RATE, value.toString()) }
     fun setBudget(category: String, mode: String, value: Double) = io { repo.setBudget(category, mode, value) }
 
-    fun setPaid(c: CommitmentEntity, paid: Boolean) = io { repo.setPaid(c.id, currentMonth, paid) }
+    fun setPaid(c: CommitmentEntity, paid: Boolean) = io { repo.setPaid(c.id, paid) }
     fun saveCommitment(c: CommitmentEntity) = io { repo.saveCommitment(c) }
     fun deleteCommitment(id: Long) = io { repo.deleteCommitment(id) }
 
@@ -103,7 +109,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** "This notification is my Car loan" — tick the commitment instead of adding an expense. */
     fun markPendingAsCommitment(pendingId: Long, c: CommitmentEntity) = io {
-        repo.setPaid(c.id, currentMonth, true)
+        repo.setPaid(c.id, true)
         repo.ignorePending(pendingId)
     }
 

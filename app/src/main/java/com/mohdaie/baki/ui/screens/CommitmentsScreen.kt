@@ -26,8 +26,8 @@ import com.mohdaie.baki.data.CommitmentEntity
 import com.mohdaie.baki.ui.AppViewModel
 import com.mohdaie.baki.ui.DueStatus
 import com.mohdaie.baki.ui.components.*
-import com.mohdaie.baki.ui.dueDayIn
 import com.mohdaie.baki.ui.dueStatus
+import com.mohdaie.baki.ui.dueDateIn
 import com.mohdaie.baki.ui.theme.*
 import com.mohdaie.baki.util.Fmt
 import java.time.LocalDate
@@ -36,17 +36,16 @@ import java.time.LocalDate
 fun CommitmentsScreen(vm: AppViewModel, onEdit: (CommitmentEntity) -> Unit) {
     val commitments by vm.commitments.collectAsStateWithLifecycle()
     val payments by vm.payments.collectAsStateWithLifecycle()
-    val month = vm.currentMonth
+    val period by vm.period.collectAsStateWithLifecycle()
     val today = LocalDate.now()
     val paidIds = payments.map { it.commitmentId }.toSet()
     val total = commitments.sumOf { it.amount }
     val paidTotal = commitments.filter { it.id in paidIds }.sumOf { it.amount }
     val paidCount = commitments.count { it.id in paidIds }
     val unpaid = commitments.filter { it.id !in paidIds }
-    val overdue = unpaid.filter { dueDayIn(it, month) < today.dayOfMonth }
-    val next = unpaid.filter { dueDayIn(it, month) >= today.dayOfMonth }.minByOrNull { it.dueDay }
-    val sorted = commitments.sortedBy { it.dueDay }
-    val monShort = month.format(Fmt.monShort)
+    val overdue = unpaid.filter { dueDateIn(it, period) < today }
+    val next = unpaid.filter { dueDateIn(it, period) >= today }.minByOrNull { dueDateIn(it, period) }
+    val sorted = commitments.sortedBy { dueDateIn(it, period) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -55,7 +54,7 @@ fun CommitmentsScreen(vm: AppViewModel, onEdit: (CommitmentEntity) -> Unit) {
     ) {
         item {
             BrutalCard {
-                CapsLabel("Paid this month")
+                CapsLabel("Paid since salary")
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("RM ${Fmt.money(paidTotal)}", color = Ink, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
@@ -66,7 +65,7 @@ fun CommitmentsScreen(vm: AppViewModel, onEdit: (CommitmentEntity) -> Unit) {
                 Bar(if (total > 0) (paidTotal / total).toFloat() else 0f, Accent, height = 14.dp)
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Ticking Paid deducts the amount from this month's salary balance on Home.",
+                    "Ticking Paid deducts the amount from your balance on Home.",
                     color = Muted,
                     fontSize = 12.5.sp,
                 )
@@ -86,7 +85,7 @@ fun CommitmentsScreen(vm: AppViewModel, onEdit: (CommitmentEntity) -> Unit) {
                     Spacer(Modifier.height(6.dp))
                     val (headline, sub, color) = when {
                         overdue.isNotEmpty() -> Triple("${overdue.size} overdue", overdue.joinToString { it.name }, RedText)
-                        next != null -> Triple("Next: ${next.name}", "Due ${dueDayIn(next, month)} $monShort · RM ${Fmt.money(next.amount)}", Green)
+                        next != null -> Triple("Next: ${next.name}", "Due ${dueText(next, period)} · RM ${Fmt.money(next.amount)}", Green)
                         commitments.isEmpty() -> Triple("Nothing yet", "Add your loans, rent and bills", Muted)
                         else -> Triple("All clear", "Everything is paid", Green)
                     }
@@ -102,7 +101,7 @@ fun CommitmentsScreen(vm: AppViewModel, onEdit: (CommitmentEntity) -> Unit) {
                     Text("No commitments yet", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Add loans, rent, insurance and subscriptions with +. Each one repeats every month.",
+                        "Add loans, rent, insurance and subscriptions with +. Each one repeats every salary cycle.",
                         color = Muted,
                         fontSize = 13.5.sp,
                     )
@@ -114,8 +113,8 @@ fun CommitmentsScreen(vm: AppViewModel, onEdit: (CommitmentEntity) -> Unit) {
                         CommitmentRow(
                             c = c,
                             paid = paid,
-                            sub = "Due ${dueDayIn(c, month)} $monShort · ${c.kind}",
-                            status = dueStatus(c, paid, month, today),
+                            sub = "Due ${dueText(c, period)} · ${c.kind}",
+                            status = dueStatus(c, paid, period, today),
                             onToggle = { vm.setPaid(c, !paid) },
                             onClick = { onEdit(c) },
                         )
@@ -175,4 +174,9 @@ private fun CommitmentRow(
             StatusPill(status.text, status.background, status.foreground)
         }
     }
+}
+
+private fun dueText(c: CommitmentEntity, period: com.mohdaie.baki.data.Period): String {
+    val d = dueDateIn(c, period)
+    return "${d.dayOfMonth} ${d.format(Fmt.monShort)}"
 }

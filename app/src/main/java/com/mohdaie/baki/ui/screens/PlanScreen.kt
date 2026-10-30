@@ -64,7 +64,7 @@ fun PlanScreen(vm: AppViewModel) {
     ) {
         item {
             BrutalCard {
-                CapsLabel("Net salary · monthly")
+                CapsLabel("Net salary")
                 Spacer(Modifier.height(8.dp))
                 BrutalField(
                     value = salaryText,
