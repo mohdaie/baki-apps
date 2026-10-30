@@ -423,6 +423,7 @@ fun TxRow(tx: TransactionEntity, showDivider: Boolean, onClick: () -> Unit) {
         tx.type == TxType.TRANSFER -> " · Transfer"
         tx.type == TxType.INCOME && tx.category == SALARY_TAG -> " · Net salary"
         tx.type == TxType.INCOME -> " · Income"
+        tx.commitmentId != null -> " · Commitment"
         tx.category == null -> " · Uncategorized"
         else -> ""
     }

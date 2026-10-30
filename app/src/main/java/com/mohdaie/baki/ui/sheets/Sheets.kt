@@ -108,6 +108,8 @@ fun TransactionForm(
     unpaidCommitments: List<CommitmentEntity> = emptyList(),
     onLinkCommitment: ((CommitmentEntity) -> Unit)? = null,
     startLinking: Boolean = false,
+    linkedName: String? = null,
+    onUnlink: (() -> Unit)? = null,
 ) {
     var amount by remember(init.key) { mutableStateOf(init.amount?.let { Fmt.fixed2(it) } ?: "") }
     var type by remember(init.key) { mutableStateOf(init.type) }
@@ -127,7 +129,24 @@ fun TransactionForm(
 
         Text(title, color = Ink, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
 
-        if (onLinkCommitment != null) {
+        if (linkedName != null && onUnlink != null) {
+            val linkShape = RoundedCornerShape(14.dp)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(linkShape)
+                    .background(AccentSoft)
+                    .border(2.dp, Ink, linkShape)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Linked to $linkedName", color = Ink, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                    Text("Counted as a commitment, not as spending.", color = Muted, fontSize = 12.5.sp)
+                }
+                SmallButton("Unlink", onClick = onUnlink)
+            }
+        } else if (onLinkCommitment != null) {
             LinkCommitment(
                 key = init.key,
                 amount = amountValue,
